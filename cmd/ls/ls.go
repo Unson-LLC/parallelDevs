@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"regexp"
@@ -159,7 +160,7 @@ type sessionInfo struct {
 	state state.AgentState
 }
 
-func printDetailedSessions(stateManager *state.StateManager, activeSessions []string) error {
+func printDetailedSessionsToWriter(w io.Writer, stateManager *state.StateManager, activeSessions []string) error {
 	// Load all states to sort by UpdatedAt
 	states := make(map[string]state.AgentState)
 	if data, err := os.ReadFile(stateManager.GetStatePath()); err == nil {
@@ -182,9 +183,9 @@ func printDetailedSessions(stateManager *state.StateManager, activeSessions []st
 	})
 
 	// Print header with columns
-	fmt.Printf("%-25s %-12s %-15s %-15s %-15s %s\n",
+	fmt.Fprintf(w, "%-25s %-12s %-15s %-15s %-15s %s\n",
 		"AGENT", "STATUS", "DIFF", "FILES (+/~/-)", "LAST CHANGE", "PROMPT / ERROR")
-	fmt.Println(strings.Repeat("-", 100))
+	fmt.Fprintln(w, strings.Repeat("-", 100))
 
 	// Print sessions
 	for _, session := range sessions {
@@ -270,14 +271,18 @@ func printDetailedSessions(stateManager *state.StateManager, activeSessions []st
 		}
 
 		// Print row
-		fmt.Printf("%-25s %-12s %-15s %-15s %-15s %s\n",
+		fmt.Fprintf(w, "%-25s %-12s %-15s %-15s %-15s %s\n",
 			agentInfo, statusStr, diffStr, fileStats, lastChangeDisplay, prompt)
 	}
 
 	return nil
 }
 
-func printSessions(stateManager *state.StateManager, activeSessions []string, detailed bool) error {
+func printDetailedSessions(stateManager *state.StateManager, activeSessions []string) error {
+	return printDetailedSessionsToWriter(os.Stdout, stateManager, activeSessions)
+}
+
+func printSessionsToWriter(w io.Writer, stateManager *state.StateManager, activeSessions []string, detailed bool) error {
 	// Load all states to sort by UpdatedAt
 	states := make(map[string]state.AgentState)
 	if data, err := os.ReadFile(stateManager.GetStatePath()); err == nil {
@@ -300,13 +305,13 @@ func printSessions(stateManager *state.StateManager, activeSessions []string, de
 	})
 
 	// Long format with tabwriter for alignment
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
 
 	// Print header
 	if detailed {
-		fmt.Fprintf(w, "AGENT\tMODEL\tSTATUS    DIFF\tADDR\tWORKTREE\tUPDATED\tPROMPT\n")
+		fmt.Fprintf(tw, "AGENT\tMODEL\tSTATUS    DIFF\tADDR\tWORKTREE\tUPDATED\tPROMPT\n")
 	} else {
-		fmt.Fprintf(w, "AGENT\tMODEL\tSTATUS    DIFF\tADDR\tPROMPT\n")
+		fmt.Fprintf(tw, "AGENT\tMODEL\tSTATUS    DIFF\tADDR\tPROMPT\n")
 	}
 
 	// Print sessions
@@ -353,7 +358,7 @@ func printSessions(stateManager *state.StateManager, activeSessions []string, de
 			}
 			updatedTime := formatTime(state.UpdatedAt)
 
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
 				agentName,
 				model,
 				formatStatus(status),
@@ -364,7 +369,7 @@ func printSessions(stateManager *state.StateManager, activeSessions []string, de
 				state.Prompt,
 			)
 		} else {
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n",
+			fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n",
 				agentName,
 				model,
 				formatStatus(status),
@@ -374,13 +379,13 @@ func printSessions(stateManager *state.StateManager, activeSessions []string, de
 			)
 		}
 	}
-	w.Flush()
+	tw.Flush()
 
 	return nil
 }
 
-func clearScreen() {
-	fmt.Print("\033[H\033[2J")
+func printSessions(stateManager *state.StateManager, activeSessions []string, detailed bool) error {
+	return printSessionsToWriter(os.Stdout, stateManager, activeSessions, detailed)
 }
 
 func executeLs(ctx context.Context, args []string) error {
@@ -390,30 +395,33 @@ func executeLs(ctx context.Context, args []string) error {
 	}
 
 	if *watchMode {
-		// Watch mode - refresh every second
-		ticker := time.NewTicker(1 * time.Second)
+		// Watch mode - refresh every 2 seconds to reduce flicker
+		ticker := time.NewTicker(2 * time.Second)
 		defer ticker.Stop()
 
+		// カーソルを非表示にする
+		fmt.Print("\033[?25l")
+		// 終了時にカーソルを再表示
+		defer fmt.Print("\033[?25h")
+
 		// Initial display
-		clearScreen()
 		activeSessions, err := stateManager.GetActiveSessionsForRepo()
 		if err != nil {
 			return fmt.Errorf("error getting active sessions: %w", err)
 		}
 
+		// バッファを使用して初回表示
+		var buf bytes.Buffer
 		if len(activeSessions) == 0 {
-			fmt.Println("No active sessions found")
+			buf.WriteString("No active sessions found\n")
 		} else {
 			if *detailedMode {
-				if err := printDetailedSessions(stateManager, activeSessions); err != nil {
-					return err
-				}
+				printDetailedSessionsToWriter(&buf, stateManager, activeSessions)
 			} else {
-				if err := printSessions(stateManager, activeSessions, false); err != nil {
-					return err
-				}
+				printSessionsToWriter(&buf, stateManager, activeSessions, false)
 			}
 		}
+		fmt.Print(buf.String())
 
 		// Watch loop
 		for {
@@ -421,26 +429,29 @@ func executeLs(ctx context.Context, args []string) error {
 			case <-ctx.Done():
 				return ctx.Err()
 			case <-ticker.C:
-				clearScreen()
+				// カーソルをホーム位置に移動
+				fmt.Print("\033[H")
+				
+				// バッファに出力を蓄積
+				var buf bytes.Buffer
+				
+				// セッション情報を取得
 				activeSessions, err := stateManager.GetActiveSessionsForRepo()
 				if err != nil {
-					fmt.Printf("Error getting active sessions: %v\n", err)
-					continue
-				}
-
-				if len(activeSessions) == 0 {
-					fmt.Println("No active sessions found")
+					buf.WriteString(fmt.Sprintf("Error getting active sessions: %v\n", err))
+				} else if len(activeSessions) == 0 {
+					buf.WriteString("No active sessions found\n")
 				} else {
 					if *detailedMode {
-						if err := printDetailedSessions(stateManager, activeSessions); err != nil {
-							fmt.Printf("Error printing sessions: %v\n", err)
-						}
+						printDetailedSessionsToWriter(&buf, stateManager, activeSessions)
 					} else {
-						if err := printSessions(stateManager, activeSessions, false); err != nil {
-							fmt.Printf("Error printing sessions: %v\n", err)
-						}
+						printSessionsToWriter(&buf, stateManager, activeSessions, false)
 					}
 				}
+				
+				// カーソルをホーム位置から、バッファの内容を一度に出力し、残りをクリア
+				fmt.Print(buf.String())
+				fmt.Print("\033[J")
 			}
 		}
 	} else {
