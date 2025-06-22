@@ -21,13 +21,14 @@ import (
 )
 
 var (
-	fs          = flag.NewFlagSet("uzi ls", flag.ExitOnError)
-	configPath  = fs.String("config", config.GetDefaultConfigPath(), "path to config file")
-	allSessions = fs.Bool("a", false, "show all sessions including inactive")
-	watchMode   = fs.Bool("w", false, "watch mode - refresh output every second")
-	CmdLs       = &ffcli.Command{
+	fs           = flag.NewFlagSet("uzi ls", flag.ExitOnError)
+	configPath   = fs.String("config", config.GetDefaultConfigPath(), "path to config file")
+	allSessions  = fs.Bool("a", false, "show all sessions including inactive")
+	watchMode    = fs.Bool("w", false, "watch mode - refresh output every second")
+	detailedMode = fs.Bool("d", false, "show detailed information")
+	CmdLs        = &ffcli.Command{
 		Name:       "ls",
-		ShortUsage: "uzi ls [-a] [-w]",
+		ShortUsage: "uzi ls [-a] [-w] [-d]",
 		ShortHelp:  "List active agent sessions",
 		FlagSet:    fs,
 		Exec:       executeLs,
@@ -128,7 +129,7 @@ func formatTime(t time.Time) string {
 	return t.Format("Jan 02")
 }
 
-func printSessions(stateManager *state.StateManager, activeSessions []string) error {
+func printSessions(stateManager *state.StateManager, activeSessions []string, detailed bool) error {
 	// Load all states to sort by UpdatedAt
 	states := make(map[string]state.AgentState)
 	if data, err := os.ReadFile(stateManager.GetStatePath()); err == nil {
@@ -158,7 +159,11 @@ func printSessions(stateManager *state.StateManager, activeSessions []string) er
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 
 	// Print header
-	fmt.Fprintf(w, "AGENT\tMODEL\tSTATUS    DIFF\tADDR\tPROMPT\n")
+	if detailed {
+		fmt.Fprintf(w, "AGENT\tMODEL\tSTATUS    DIFF\tADDR\tWORKTREE\tUPDATED\tPROMPT\n")
+	} else {
+		fmt.Fprintf(w, "AGENT\tMODEL\tSTATUS    DIFF\tADDR\tPROMPT\n")
+	}
 
 	// Print sessions
 	for _, session := range sessions {
@@ -195,14 +200,35 @@ func printSessions(stateManager *state.StateManager, activeSessions []string) er
 		if state.Port != 0 {
 			addr = fmt.Sprintf("http://localhost:%d", state.Port)
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n",
-			agentName,
-			model,
-			formatStatus(status),
-			changes,
-			addr,
-			state.Prompt,
-		)
+		
+		if detailed {
+			// Show worktree path and updated time in detailed mode
+			worktreePath := state.WorktreePath
+			if worktreePath == "" {
+				worktreePath = "-"
+			}
+			updatedTime := formatTime(state.UpdatedAt)
+			
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+				agentName,
+				model,
+				formatStatus(status),
+				changes,
+				addr,
+				worktreePath,
+				updatedTime,
+				state.Prompt,
+			)
+		} else {
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n",
+				agentName,
+				model,
+				formatStatus(status),
+				changes,
+				addr,
+				state.Prompt,
+			)
+		}
 	}
 	w.Flush()
 
@@ -234,7 +260,7 @@ func executeLs(ctx context.Context, args []string) error {
 		if len(activeSessions) == 0 {
 			fmt.Println("No active sessions found")
 		} else {
-			if err := printSessions(stateManager, activeSessions); err != nil {
+			if err := printSessions(stateManager, activeSessions, *detailedMode); err != nil {
 				return err
 			}
 		}
@@ -255,7 +281,7 @@ func executeLs(ctx context.Context, args []string) error {
 				if len(activeSessions) == 0 {
 					fmt.Println("No active sessions found")
 				} else {
-					if err := printSessions(stateManager, activeSessions); err != nil {
+					if err := printSessions(stateManager, activeSessions, *detailedMode); err != nil {
 						fmt.Printf("Error printing sessions: %v\n", err)
 					}
 				}
@@ -273,6 +299,6 @@ func executeLs(ctx context.Context, args []string) error {
 			return nil
 		}
 
-		return printSessions(stateManager, activeSessions)
+		return printSessions(stateManager, activeSessions, *detailedMode)
 	}
 }
