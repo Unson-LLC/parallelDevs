@@ -10,7 +10,7 @@ func formatDetailedStatus(status string, isRunning bool) string {
 	if isRunning {
 		return fmt.Sprintf("\033[33m%-10s\033[0m", "running")
 	}
-	
+
 	switch status {
 	case "ready":
 		return fmt.Sprintf("\033[32m%-10s\033[0m", "ready")
@@ -27,10 +27,10 @@ func formatFileChanges(additions, deletions int) string {
 	if additions == 0 && deletions == 0 {
 		return "\033[90m  no changes\033[0m"
 	}
-	
+
 	addStr := fmt.Sprintf("\033[32m+%d\033[0m", additions)
 	delStr := fmt.Sprintf("\033[31m-%d\033[0m", deletions)
-	
+
 	return fmt.Sprintf("%s / %s", addStr, delStr)
 }
 
@@ -38,10 +38,10 @@ func formatLastChange(lastChanged time.Time) string {
 	if lastChanged.IsZero() {
 		return "\033[90mnever\033[0m"
 	}
-	
+
 	now := time.Now()
 	diff := now.Sub(lastChanged)
-	
+
 	switch {
 	case diff < time.Minute:
 		return fmt.Sprintf("%ds ago", int(diff.Seconds()))

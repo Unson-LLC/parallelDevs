@@ -107,7 +107,7 @@ func TestHelperProcess(t *testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return
 	}
-	
+
 	args := os.Args
 	for i, arg := range args {
 		if arg == "--" {
@@ -115,14 +115,14 @@ func TestHelperProcess(t *testing.T) {
 			break
 		}
 	}
-	
+
 	if len(args) == 0 {
 		os.Exit(1)
 	}
-	
+
 	command := args[0]
 	cmdArgs := args[1:]
-	
+
 	// Find matching context
 	for _, ctx := range execContexts {
 		if ctx.commandName == command && argsMatch(ctx.args, cmdArgs) {
@@ -130,7 +130,7 @@ func TestHelperProcess(t *testing.T) {
 			os.Exit(ctx.exitCode)
 		}
 	}
-	
+
 	// Default: command not found
 	os.Exit(1)
 }
@@ -171,7 +171,7 @@ func TestExecuteLs_NoActiveSessions(t *testing.T) {
 
 	// Create mock state manager with no active sessions
 	mockSM := newMockStateManager()
-	
+
 	// Create temporary state file
 	tmpDir := t.TempDir()
 	stateFile := filepath.Join(tmpDir, "state.json")
@@ -207,16 +207,16 @@ func TestExecuteLs_SingleSession(t *testing.T) {
 	// Set up mocks
 	clearCommandMocks()
 	defer clearCommandMocks()
-	
+
 	// Mock tmux has-session command
 	setupCommandMock("tmux", []string{"has-session", "-t", "agent-1-john"}, "", 0)
-	
+
 	// Mock tmux capture-pane command
 	setupCommandMock("tmux", []string{"capture-pane", "-t", "agent-1-john:agent", "-p"}, "Ready for input", 0)
-	
+
 	// Mock git commands for diff totals
 	setupCommandMock("sh", []string{"-c", "git add -A . && git diff --cached --shortstat HEAD && git reset HEAD > /dev/null"}, " 1 file changed, 10 insertions(+), 2 deletions(-)", 0)
-	
+
 	// Capture stdout
 	old := os.Stdout
 	r, w, _ := os.Pipe()
@@ -226,7 +226,7 @@ func TestExecuteLs_SingleSession(t *testing.T) {
 	mockSM := newMockStateManager()
 	mockSM.SaveStateWithPort("Test prompt", "feature-branch", "agent-1-john", "/tmp/worktree", "claude", 3000)
 	mockSM.activeSessions["agent-1-john"] = true
-	
+
 	// Create temporary state file
 	tmpDir := t.TempDir()
 	stateFile := filepath.Join(tmpDir, "state.json")
@@ -259,7 +259,7 @@ func TestExecuteLs_SingleSession(t *testing.T) {
 	if strings.Contains(output, "No active sessions found") {
 		t.Errorf("Expected session output, but got 'No active sessions found'")
 	}
-	
+
 	if !strings.Contains(output, "john") {
 		t.Errorf("Expected 'john' in output, got: %s", output)
 	}
@@ -271,16 +271,16 @@ func TestGetGitDiffTotals_DirectCall(t *testing.T) {
 	mockSM := newMockStateManager()
 	sessionName := "test-session"
 	mockSM.SaveStateWithPort("Test", "branch", sessionName, "/tmp/test", "claude", 0)
-	
+
 	// Create temporary state file
 	tmpDir := t.TempDir()
 	stateFile := filepath.Join(tmpDir, "state.json")
 	data, _ := json.Marshal(mockSM.states)
 	os.WriteFile(stateFile, data, 0644)
-	
+
 	// Call the actual function - this will fail because it creates its own StateManager
 	insertions, deletions := getGitDiffTotals(sessionName, state.NewStateManager())
-	
+
 	// These assertions will fail because the function won't find our mock data
 	if insertions != 0 || deletions != 0 {
 		t.Errorf("Expected 0,0 for non-existent session, got %d,%d", insertions, deletions)
@@ -290,37 +290,37 @@ func TestGetGitDiffTotals_DirectCall(t *testing.T) {
 // Test for getGitDiffTotals function with different outputs
 func TestGetGitDiffTotals(t *testing.T) {
 	tests := []struct {
-		name              string
-		sessionName       string
-		gitOutput         string
+		name               string
+		sessionName        string
+		gitOutput          string
 		expectedInsertions int
 		expectedDeletions  int
 	}{
 		{
-			name:              "No changes",
-			sessionName:       "test-session",
-			gitOutput:        "",
+			name:               "No changes",
+			sessionName:        "test-session",
+			gitOutput:          "",
 			expectedInsertions: 0,
 			expectedDeletions:  0,
 		},
 		{
-			name:              "Only insertions",
-			sessionName:       "test-session",
-			gitOutput:        " 1 file changed, 10 insertions(+)",
+			name:               "Only insertions",
+			sessionName:        "test-session",
+			gitOutput:          " 1 file changed, 10 insertions(+)",
 			expectedInsertions: 10,
 			expectedDeletions:  0,
 		},
 		{
-			name:              "Only deletions",
-			sessionName:       "test-session",
-			gitOutput:        " 1 file changed, 5 deletions(-)",
+			name:               "Only deletions",
+			sessionName:        "test-session",
+			gitOutput:          " 1 file changed, 5 deletions(-)",
 			expectedInsertions: 0,
 			expectedDeletions:  5,
 		},
 		{
-			name:              "Both insertions and deletions",
-			sessionName:       "test-session",
-			gitOutput:        " 2 files changed, 15 insertions(+), 3 deletions(-)",
+			name:               "Both insertions and deletions",
+			sessionName:        "test-session",
+			gitOutput:          " 2 files changed, 15 insertions(+), 3 deletions(-)",
 			expectedInsertions: 15,
 			expectedDeletions:  3,
 		},
@@ -338,12 +338,12 @@ func TestGetGitDiffTotals(t *testing.T) {
 func TestGetPaneContent_DirectCall(t *testing.T) {
 	// Test with a non-existent session
 	content, err := getPaneContent("non-existent-session")
-	
+
 	// This should return an error but we're testing the actual function
 	if err == nil {
 		t.Errorf("Expected error for non-existent session, got nil")
 	}
-	
+
 	if content != "" {
 		t.Errorf("Expected empty content for non-existent session, got: %s", content)
 	}
@@ -352,20 +352,20 @@ func TestGetPaneContent_DirectCall(t *testing.T) {
 // Test for getPaneContent function
 func TestGetPaneContent(t *testing.T) {
 	tests := []struct {
-		name         string
-		sessionName  string
+		name            string
+		sessionName     string
 		expectedContent string
 		expectedError   bool
 	}{
 		{
-			name:         "Valid session",
-			sessionName:  "test-session",
+			name:            "Valid session",
+			sessionName:     "test-session",
 			expectedContent: "test content",
 			expectedError:   false,
 		},
 		{
-			name:         "Invalid session",
-			sessionName:  "non-existent",
+			name:            "Invalid session",
+			sessionName:     "non-existent",
 			expectedContent: "",
 			expectedError:   true,
 		},
@@ -383,7 +383,7 @@ func TestGetPaneContent(t *testing.T) {
 func TestGetAgentStatus_DirectCall(t *testing.T) {
 	// This will call getPaneContent internally which will fail
 	status := getAgentStatus("non-existent-session")
-	
+
 	// When getPaneContent fails, it should return "unknown"
 	if status != "unknown" {
 		t.Errorf("Expected 'unknown' for non-existent session, got: %s", status)
@@ -393,28 +393,28 @@ func TestGetAgentStatus_DirectCall(t *testing.T) {
 // Test for getAgentStatus function
 func TestGetAgentStatus(t *testing.T) {
 	tests := []struct {
-		name         string
-		paneContent  string
+		name           string
+		paneContent    string
 		expectedStatus string
 	}{
 		{
-			name:         "Running status - esc to interrupt",
-			paneContent:  "Some output\nesc to interrupt\nmore output",
+			name:           "Running status - esc to interrupt",
+			paneContent:    "Some output\nesc to interrupt\nmore output",
 			expectedStatus: "running",
 		},
 		{
-			name:         "Running status - Thinking",
-			paneContent:  "Thinking about the problem...",
+			name:           "Running status - Thinking",
+			paneContent:    "Thinking about the problem...",
 			expectedStatus: "running",
 		},
 		{
-			name:         "Ready status",
-			paneContent:  "Waiting for input...",
+			name:           "Ready status",
+			paneContent:    "Waiting for input...",
 			expectedStatus: "ready",
 		},
 		{
-			name:         "Empty content",
-			paneContent:  "",
+			name:           "Empty content",
+			paneContent:    "",
 			expectedStatus: "ready",
 		},
 	}
@@ -469,7 +469,7 @@ func TestFormatStatus(t *testing.T) {
 // Test for formatTime function
 func TestFormatTime(t *testing.T) {
 	now := time.Now()
-	
+
 	tests := []struct {
 		name     string
 		time     time.Time
@@ -516,7 +516,7 @@ func TestPrintSessions_DirectCall(t *testing.T) {
 
 	// Create a real state manager (will use actual filesystem)
 	sm := state.NewStateManager()
-	
+
 	// Try to print sessions - this will likely print nothing or fail
 	err := printSessions(sm, []string{"test-session"})
 
@@ -536,7 +536,7 @@ func TestPrintSessions_DirectCall(t *testing.T) {
 	if err != nil {
 		t.Logf("printSessions returned error as expected: %v", err)
 	}
-	
+
 	// Check if header was printed
 	if !strings.Contains(output, "AGENT") || !strings.Contains(output, "MODEL") {
 		t.Errorf("Expected header in output, got: %s", output)
@@ -568,7 +568,7 @@ func TestExecuteLs_ErrorHandling(t *testing.T) {
 // Test for edge cases
 func TestFormatTime_EdgeCases(t *testing.T) {
 	now := time.Now()
-	
+
 	tests := []struct {
 		name     string
 		time     time.Time
@@ -613,7 +613,7 @@ func TestFormatStatus_ANSICodes(t *testing.T) {
 	if !strings.Contains(readyStatus, "\033[32m") {
 		t.Errorf("Expected green ANSI code for ready status")
 	}
-	
+
 	runningStatus := formatStatus("running")
 	if !strings.Contains(runningStatus, "\033[33m") {
 		t.Errorf("Expected yellow ANSI code for running status")
@@ -626,11 +626,11 @@ func TestGitDiffRegexPatterns(t *testing.T) {
 	// This is a unit test for the regex logic only
 	insRe := regexp.MustCompile(`(\d+) insertion(?:s)?\(\+\)`)
 	delRe := regexp.MustCompile(`(\d+) deletion(?:s)?\(\-\)`)
-	
+
 	testCases := []struct {
-		input       string
-		insertions  int
-		deletions   int
+		input      string
+		insertions int
+		deletions  int
 	}{
 		{
 			input:      " 1 file changed, 1 insertion(+)",
@@ -648,19 +648,19 @@ func TestGitDiffRegexPatterns(t *testing.T) {
 			deletions:  50,
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {
 			insertions := 0
 			deletions := 0
-			
+
 			if m := insRe.FindStringSubmatch(tc.input); len(m) > 1 {
 				fmt.Sscanf(m[1], "%d", &insertions)
 			}
 			if m := delRe.FindStringSubmatch(tc.input); len(m) > 1 {
 				fmt.Sscanf(m[1], "%d", &deletions)
 			}
-			
+
 			if insertions != tc.insertions {
 				t.Errorf("Expected %d insertions, got %d", tc.insertions, insertions)
 			}
@@ -685,13 +685,13 @@ func TestDetailedFlag(t *testing.T) {
 	allSessions = fs.Bool("a", false, "show all sessions including inactive")
 	watchMode = fs.Bool("w", false, "watch mode - refresh output every second")
 	detailedMode = fs.Bool("d", false, "show detailed view with file changes and status icons")
-	
+
 	// Test parsing -d flag
 	err := fs.Parse([]string{"-d"})
 	if err != nil {
 		t.Errorf("Failed to parse -d flag: %v", err)
 	}
-	
+
 	if !*detailedMode {
 		t.Errorf("Expected detailedMode to be true after parsing -d flag")
 	}
@@ -712,7 +712,7 @@ func TestExecuteLs_DetailedMode_SingleSession(t *testing.T) {
 	mockSM := newMockStateManager()
 	mockSM.SaveStateWithPort("Translate dev docs to Japanese", "feature-docs", "agent-1-yuta", "/tmp/worktree", "claude", 3000)
 	mockSM.activeSessions["agent-1-yuta"] = true
-	
+
 	// Create temporary state file
 	tmpDir := t.TempDir()
 	stateFile := filepath.Join(tmpDir, "state.json")
@@ -739,7 +739,7 @@ func TestExecuteLs_DetailedMode_SingleSession(t *testing.T) {
 	}
 
 	// Check for detailed mode headers
-	expectedHeaders := []string{"AGENT", "STATUS", "DIFF", "FILES (+/~/-)","LAST CHANGE", "PROMPT / ERROR"}
+	expectedHeaders := []string{"AGENT", "STATUS", "DIFF", "FILES (+/~/-)", "LAST CHANGE", "PROMPT / ERROR"}
 	for _, header := range expectedHeaders {
 		if !strings.Contains(output, header) {
 			t.Errorf("Expected header '%s' in detailed mode output, got: %s", header, output)
@@ -805,7 +805,7 @@ func TestGetGitDiffDetails_LsTest(t *testing.T) {
 // Test for getDetailedAgentStatus function in ls_test
 func TestGetDetailedAgentStatus_LsTest(t *testing.T) {
 	now := time.Now()
-	
+
 	tests := []struct {
 		name           string
 		sessionName    string
@@ -898,7 +898,7 @@ func TestExecuteLs_DetailedWatchMode(t *testing.T) {
 	// Set both flags
 	*detailedMode = true
 	*watchMode = true
-	defer func() { 
+	defer func() {
 		*detailedMode = false
 		*watchMode = false
 	}()

@@ -4,8 +4,8 @@ import (
 	"testing"
 )
 
-// Test structure for Git diff details
-type GitDiffDetails struct {
+// Test structure for Git diff details summary
+type GitDiffDetailsSummary struct {
 	AddedFiles      int
 	ModifiedFiles   int
 	DeletedFiles    int
@@ -21,14 +21,14 @@ type FileChange struct {
 // Test for parsing git diff --name-status output
 func TestParseGitNameStatus(t *testing.T) {
 	tests := []struct {
-		name               string
-		gitOutput          string
-		expectedDetails    GitDiffDetails
+		name            string
+		gitOutput       string
+		expectedDetails GitDiffDetailsSummary
 	}{
 		{
 			name:      "Single file added",
 			gitOutput: "A\tdocs/development/BEST_PRACTICES_JP.md",
-			expectedDetails: GitDiffDetails{
+			expectedDetails: GitDiffDetailsSummary{
 				AddedFiles:      1,
 				ModifiedFiles:   0,
 				DeletedFiles:    0,
@@ -121,15 +121,15 @@ func TestParseGitNameStatus(t *testing.T) {
 // Test for getGitDiffDetails function
 func TestGetGitDiffDetails(t *testing.T) {
 	tests := []struct {
-		name               string
-		sessionName        string
-		mockGitOutput      string
-		expectedDetails    GitDiffDetails
-		expectError        bool
+		name            string
+		sessionName     string
+		mockGitOutput   string
+		expectedDetails GitDiffDetails
+		expectError     bool
 	}{
 		{
-			name:        "Valid session with changes",
-			sessionName: "agent-1-test",
+			name:          "Valid session with changes",
+			sessionName:   "agent-1-test",
 			mockGitOutput: "A\tsrc/new_feature.go\nM\tsrc/main.go\nD\tsrc/old_feature.go",
 			expectedDetails: GitDiffDetails{
 				AddedFiles:      1,
@@ -140,8 +140,8 @@ func TestGetGitDiffDetails(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "Session with no changes",
-			sessionName: "agent-2-test",
+			name:          "Session with no changes",
+			sessionName:   "agent-2-test",
 			mockGitOutput: "",
 			expectedDetails: GitDiffDetails{
 				AddedFiles:      0,
@@ -152,11 +152,11 @@ func TestGetGitDiffDetails(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "Non-existent session",
-			sessionName: "non-existent",
-			mockGitOutput: "",
+			name:            "Non-existent session",
+			sessionName:     "non-existent",
+			mockGitOutput:   "",
 			expectedDetails: GitDiffDetails{},
-			expectError: true,
+			expectError:     true,
 		},
 	}
 
@@ -171,9 +171,9 @@ func TestGetGitDiffDetails(t *testing.T) {
 // Test for extracting the most recently changed file
 func TestGetLastChangedFile(t *testing.T) {
 	tests := []struct {
-		name           string
-		fileChanges    []FileChange
-		expectedFile   string
+		name         string
+		fileChanges  []FileChange
+		expectedFile string
 	}{
 		{
 			name:         "Single file",
@@ -181,7 +181,7 @@ func TestGetLastChangedFile(t *testing.T) {
 			expectedFile: "main.go",
 		},
 		{
-			name:         "Multiple files - last one wins",
+			name: "Multiple files - last one wins",
 			fileChanges: []FileChange{
 				{Status: "A", FilePath: "first.go"},
 				{Status: "M", FilePath: "second.go"},
@@ -206,7 +206,7 @@ func TestGetLastChangedFile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := getLastChangedFile(tt.fileChanges)
-			
+
 			if result != tt.expectedFile {
 				t.Errorf("Expected %s, got %s", tt.expectedFile, result)
 			}
@@ -269,7 +269,7 @@ func TestCountFileChangesByType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			added, modified, deleted := countFileChangesByType(tt.fileChanges)
-			
+
 			if added != tt.expectedAdded {
 				t.Errorf("Expected %d added, got %d", tt.expectedAdded, added)
 			}
@@ -287,7 +287,7 @@ func TestCountFileChangesByType(t *testing.T) {
 func TestGitDiffNameStatusCommand(t *testing.T) {
 	// Test that the git command is properly constructed
 	expectedCmd := "git add -A . && git diff --cached --name-status HEAD && git reset HEAD > /dev/null"
-	
+
 	// This test verifies the exact command we'll use
 	if getGitDiffNameStatusCommand() != expectedCmd {
 		t.Errorf("Git command mismatch.\nExpected: %s\nGot: %s", expectedCmd, getGitDiffNameStatusCommand())
@@ -314,9 +314,4 @@ func countFileChangesByType(changes []FileChange) (added, modified, deleted int)
 		}
 	}
 	return
-}
-
-func getGitDiffNameStatusCommand() string {
-	// This function doesn't exist yet - RED phase
-	return ""
 }

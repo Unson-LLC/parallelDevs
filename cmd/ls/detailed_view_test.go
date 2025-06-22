@@ -140,11 +140,11 @@ func TestStatusIconFormatting(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test formatDetailedStatus function
 			result := formatDetailedStatus(tt.status)
-			
+
 			if !strings.Contains(result, tt.expectedIcon) {
 				t.Errorf("Expected icon %s in result, got: %s", tt.expectedIcon, result)
 			}
-			
+
 			if !strings.Contains(result, tt.expectedText) {
 				t.Errorf("Expected text %s in result, got: %s", tt.expectedText, result)
 			}
@@ -155,11 +155,11 @@ func TestStatusIconFormatting(t *testing.T) {
 // Test FILES column formatting
 func TestFilesColumnFormatting(t *testing.T) {
 	tests := []struct {
-		name             string
-		added            int
-		modified         int
-		deleted          int
-		expectedFormat   string
+		name           string
+		added          int
+		modified       int
+		deleted        int
+		expectedFormat string
 	}{
 		{
 			name:           "No changes",
@@ -194,7 +194,7 @@ func TestFilesColumnFormatting(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := formatFileChanges(tt.added, tt.modified, tt.deleted)
-			
+
 			if result != tt.expectedFormat {
 				t.Errorf("Expected %s, got %s", tt.expectedFormat, result)
 			}
@@ -229,11 +229,11 @@ func TestLastChangeFormatting(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := formatLastChange(tt.lastChange, 40) // 40 chars max width
-			
+
 			if len(result) > 40 && tt.lastChange != "" {
 				t.Errorf("Result exceeds max width: %d chars", len(result))
 			}
-			
+
 			if tt.lastChange == "" && result != "-" {
 				t.Errorf("Expected '-' for empty input, got: %s", result)
 			}
@@ -245,11 +245,11 @@ func TestLastChangeFormatting(t *testing.T) {
 func TestTableSeparator(t *testing.T) {
 	// Test that the separator line is correctly formatted
 	separator := generateTableSeparator(130) // Typical terminal width
-	
+
 	if len(separator) != 130 {
 		t.Errorf("Expected separator length 130, got %d", len(separator))
 	}
-	
+
 	// Check that it's all dashes
 	for _, ch := range separator {
 		if ch != '─' {
@@ -261,31 +261,31 @@ func TestTableSeparator(t *testing.T) {
 // Test error message formatting in PROMPT / ERROR column
 func TestErrorMessageFormatting(t *testing.T) {
 	tests := []struct {
-		name          string
-		status        string
-		prompt        string
-		errorMsg      string
+		name           string
+		status         string
+		prompt         string
+		errorMsg       string
 		expectedOutput string
 	}{
 		{
-			name:          "Normal prompt display",
-			status:        "ready",
-			prompt:        "Translate documentation",
-			errorMsg:      "",
+			name:           "Normal prompt display",
+			status:         "ready",
+			prompt:         "Translate documentation",
+			errorMsg:       "",
 			expectedOutput: "Translate documentation",
 		},
 		{
-			name:          "Error status with message",
-			status:        "error",
-			prompt:        "Original task",
-			errorMsg:      "Error: Infinite loop in tmux session.",
+			name:           "Error status with message",
+			status:         "error",
+			prompt:         "Original task",
+			errorMsg:       "Error: Infinite loop in tmux session.",
 			expectedOutput: "Error: Infinite loop in tmux session.",
 		},
 		{
-			name:          "Long error message truncation",
-			status:        "error",
-			prompt:        "Task",
-			errorMsg:      "Error: This is a very long error message that should be truncated to fit within the column width",
+			name:           "Long error message truncation",
+			status:         "error",
+			prompt:         "Task",
+			errorMsg:       "Error: This is a very long error message that should be truncated to fit within the column width",
 			expectedOutput: "Error: This is a very long error message that sho...",
 		},
 	}
@@ -298,23 +298,4 @@ func TestErrorMessageFormatting(t *testing.T) {
 	}
 }
 
-// Helper function for tests (will be implemented in GREEN phase)
-func formatDetailedStatus(status string) string {
-	// This function doesn't exist yet - RED phase
-	return ""
-}
-
-func formatFileChanges(added, modified, deleted int) string {
-	// This function doesn't exist yet - RED phase
-	return ""
-}
-
-func formatLastChange(path string, maxWidth int) string {
-	// This function doesn't exist yet - RED phase
-	return ""
-}
-
-func generateTableSeparator(width int) string {
-	// This function doesn't exist yet - RED phase
-	return ""
-}
+// Helper functions have been moved to detailed_view.go
