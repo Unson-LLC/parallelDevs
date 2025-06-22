@@ -1,0 +1,357 @@
+package ls
+
+import (
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/devflowinc/uzi/pkg/state"
+)
+
+// Test for detecting stuck agents (no update for 5+ minutes)
+func TestDetectStuckAgents(t *testing.T) {
+	now := time.Now()
+	
+	tests := []struct {
+		name           string
+		sessionName    string
+		lastUpdate     time.Time
+		paneContent    string
+		expectedStatus string
+	}{
+		{
+			name:           "Recently active agent",
+			sessionName:    "agent-1-active",
+			lastUpdate:     now.Add(-1 * time.Minute),
+			paneContent:    "Waiting for input",
+			expectedStatus: "ready",
+		},
+		{
+			name:           "Agent stuck for 6 minutes",
+			sessionName:    "agent-2-stuck",
+			lastUpdate:     now.Add(-6 * time.Minute),
+			paneContent:    "Waiting for input",
+			expectedStatus: "stuck",
+		},
+		{
+			name:           "Agent stuck for exactly 5 minutes",
+			sessionName:    "agent-3-boundary",
+			lastUpdate:     now.Add(-5 * time.Minute),
+			paneContent:    "Waiting for input",
+			expectedStatus: "stuck",
+		},
+		{
+			name:           "Running agent even if old update",
+			sessionName:    "agent-4-running",
+			lastUpdate:     now.Add(-10 * time.Minute),
+			paneContent:    "esc to interrupt",
+			expectedStatus: "running",
+		},
+		{
+			name:           "Thinking agent not stuck",
+			sessionName:    "agent-5-thinking",
+			lastUpdate:     now.Add(-7 * time.Minute),
+			paneContent:    "Thinking about the problem",
+			expectedStatus: "running",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// This will fail in RED phase as getDetailedAgentStatus doesn't exist yet
+			t.Skip("getDetailedAgentStatus not implemented yet")
+		})
+	}
+}
+
+// Test for detecting error states
+func TestDetectErrorStates(t *testing.T) {
+	tests := []struct {
+		name           string
+		sessionName    string
+		paneContent    string
+		tmuxError      error
+		expectedStatus string
+		expectedError  string
+	}{
+		{
+			name:           "Normal operation",
+			sessionName:    "agent-1-normal",
+			paneContent:    "Working on task",
+			tmuxError:      nil,
+			expectedStatus: "ready",
+			expectedError:  "",
+		},
+		{
+			name:           "Error in pane content",
+			sessionName:    "agent-2-error",
+			paneContent:    "Error: Command failed with exit code 1",
+			tmuxError:      nil,
+			expectedStatus: "error",
+			expectedError:  "Error: Command failed with exit code 1",
+		},
+		{
+			name:           "Infinite loop detected",
+			sessionName:    "agent-3-loop",
+			paneContent:    "Error: Infinite loop in tmux session.",
+			tmuxError:      nil,
+			expectedStatus: "error",
+			expectedError:  "Error: Infinite loop in tmux session.",
+		},
+		{
+			name:           "Tmux session not found",
+			sessionName:    "agent-4-notfound",
+			paneContent:    "",
+			tmuxError:      &tmuxSessionError{message: "session not found"},
+			expectedStatus: "error",
+			expectedError:  "Tmux session not found",
+		},
+		{
+			name:           "Panic in output",
+			sessionName:    "agent-5-panic",
+			paneContent:    "panic: runtime error: index out of range",
+			tmuxError:      nil,
+			expectedStatus: "error",
+			expectedError:  "panic: runtime error: index out of range",
+		},
+		{
+			name:           "Fatal error",
+			sessionName:    "agent-6-fatal",
+			paneContent:    "fatal: Cannot read repository",
+			tmuxError:      nil,
+			expectedStatus: "error",
+			expectedError:  "fatal: Cannot read repository",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// This will fail in RED phase as error detection doesn't exist yet
+			t.Skip("Error detection not implemented yet")
+		})
+	}
+}
+
+// Test for comprehensive status detection
+func TestGetDetailedAgentStatus(t *testing.T) {
+	now := time.Now()
+	
+	tests := []struct {
+		name           string
+		sessionName    string
+		agentState     state.AgentState
+		paneContent    string
+		tmuxError      error
+		expectedStatus string
+		expectedIcon   string
+		expectedError  string
+	}{
+		{
+			name:        "Ready agent",
+			sessionName: "agent-ready",
+			agentState: state.AgentState{
+				UpdatedAt: now.Add(-30 * time.Second),
+			},
+			paneContent:    "Waiting for input",
+			tmuxError:      nil,
+			expectedStatus: "ready",
+			expectedIcon:   "✅",
+			expectedError:  "",
+		},
+		{
+			name:        "Running agent",
+			sessionName: "agent-running",
+			agentState: state.AgentState{
+				UpdatedAt: now.Add(-10 * time.Second),
+			},
+			paneContent:    "esc to interrupt\nProcessing request...",
+			tmuxError:      nil,
+			expectedStatus: "running",
+			expectedIcon:   "🏃",
+			expectedError:  "",
+		},
+		{
+			name:        "Stuck agent",
+			sessionName: "agent-stuck",
+			agentState: state.AgentState{
+				UpdatedAt: now.Add(-6 * time.Minute),
+			},
+			paneContent:    "Waiting...",
+			tmuxError:      nil,
+			expectedStatus: "stuck",
+			expectedIcon:   "⚠️",
+			expectedError:  "",
+		},
+		{
+			name:        "Error agent",
+			sessionName: "agent-error",
+			agentState: state.AgentState{
+				UpdatedAt: now.Add(-1 * time.Minute),
+			},
+			paneContent:    "Error: Failed to complete task",
+			tmuxError:      nil,
+			expectedStatus: "error",
+			expectedIcon:   "❌",
+			expectedError:  "Error: Failed to complete task",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// This will fail in RED phase as getDetailedAgentStatus doesn't exist yet
+			t.Skip("getDetailedAgentStatus not implemented yet")
+		})
+	}
+}
+
+// Test error message extraction
+func TestExtractErrorMessage(t *testing.T) {
+	tests := []struct {
+		name            string
+		paneContent     string
+		expectedError   string
+		expectedIsError bool
+	}{
+		{
+			name:            "No error",
+			paneContent:     "Everything is working fine",
+			expectedError:   "",
+			expectedIsError: false,
+		},
+		{
+			name:            "Simple error",
+			paneContent:     "Error: File not found",
+			expectedError:   "Error: File not found",
+			expectedIsError: true,
+		},
+		{
+			name:            "Error in middle of output",
+			paneContent:     "Processing...\nError: Connection timeout\nRetrying...",
+			expectedError:   "Error: Connection timeout",
+			expectedIsError: true,
+		},
+		{
+			name:            "Panic error",
+			paneContent:     "panic: runtime error: invalid memory address",
+			expectedError:   "panic: runtime error: invalid memory address",
+			expectedIsError: true,
+		},
+		{
+			name:            "Fatal error",
+			paneContent:     "fatal: not a git repository",
+			expectedError:   "fatal: not a git repository",
+			expectedIsError: true,
+		},
+		{
+			name:            "Multiple errors - first one",
+			paneContent:     "Error: First problem\nError: Second problem",
+			expectedError:   "Error: First problem",
+			expectedIsError: true,
+		},
+		{
+			name:            "Case insensitive error",
+			paneContent:     "ERROR: SOMETHING WENT WRONG",
+			expectedError:   "ERROR: SOMETHING WENT WRONG",
+			expectedIsError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			errorMsg, isError := extractErrorMessage(tt.paneContent)
+			
+			if errorMsg != tt.expectedError {
+				t.Errorf("Expected error message %q, got %q", tt.expectedError, errorMsg)
+			}
+			
+			if isError != tt.expectedIsError {
+				t.Errorf("Expected isError=%v, got %v", tt.expectedIsError, isError)
+			}
+		})
+	}
+}
+
+// Test stuck duration calculation
+func TestCalculateStuckDuration(t *testing.T) {
+	now := time.Now()
+	
+	tests := []struct {
+		name             string
+		lastUpdate       time.Time
+		expectedIsStuck  bool
+		expectedDuration time.Duration
+	}{
+		{
+			name:             "Not stuck - recent update",
+			lastUpdate:       now.Add(-2 * time.Minute),
+			expectedIsStuck:  false,
+			expectedDuration: 2 * time.Minute,
+		},
+		{
+			name:             "Just became stuck - 5 minutes",
+			lastUpdate:       now.Add(-5 * time.Minute),
+			expectedIsStuck:  true,
+			expectedDuration: 5 * time.Minute,
+		},
+		{
+			name:             "Definitely stuck - 10 minutes",
+			lastUpdate:       now.Add(-10 * time.Minute),
+			expectedIsStuck:  true,
+			expectedDuration: 10 * time.Minute,
+		},
+		{
+			name:             "Edge case - 4:59",
+			lastUpdate:       now.Add(-4*time.Minute - 59*time.Second),
+			expectedIsStuck:  false,
+			expectedDuration: 4*time.Minute + 59*time.Second,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			isStuck, duration := isAgentStuck(tt.lastUpdate)
+			
+			if isStuck != tt.expectedIsStuck {
+				t.Errorf("Expected isStuck=%v, got %v", tt.expectedIsStuck, isStuck)
+			}
+			
+			// Allow small time difference due to execution time
+			diff := duration - tt.expectedDuration
+			if diff < -100*time.Millisecond || diff > 100*time.Millisecond {
+				t.Errorf("Expected duration ~%v, got %v", tt.expectedDuration, duration)
+			}
+		})
+	}
+}
+
+// Custom error type for tmux errors
+type tmuxSessionError struct {
+	message string
+}
+
+func (e *tmuxSessionError) Error() string {
+	return e.message
+}
+
+// Helper functions for tests (will be implemented in GREEN phase)
+func extractErrorMessage(content string) (string, bool) {
+	// Check for various error patterns
+	lines := strings.Split(content, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		lowerLine := strings.ToLower(line)
+		
+		if strings.HasPrefix(lowerLine, "error:") ||
+			strings.HasPrefix(lowerLine, "panic:") ||
+			strings.HasPrefix(lowerLine, "fatal:") {
+			return line, true
+		}
+	}
+	
+	return "", false
+}
+
+func isAgentStuck(lastUpdate time.Time) (bool, time.Duration) {
+	duration := time.Since(lastUpdate)
+	return duration >= 5*time.Minute, duration
+}

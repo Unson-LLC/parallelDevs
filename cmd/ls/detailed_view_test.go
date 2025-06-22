@@ -10,6 +10,8 @@ import (
 	"github.com/devflowinc/uzi/pkg/state"
 )
 
+// Note: sessionInfo is now defined in ls.go
+
 // Test the detailed table format output
 func TestDetailedTableFormat(t *testing.T) {
 	tests := []struct {
@@ -298,4 +300,4 @@ func TestErrorMessageFormatting(t *testing.T) {
 	}
 }
 
-// Helper functions have been moved to detailed_view.go
+// Note: Helper functions are now implemented in detailed_view.go
