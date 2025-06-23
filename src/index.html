@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ブロック崩しゲーム</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="game-container">
+        <!-- タイトル画面 -->
+        <div id="title-screen" class="screen">
+            <h1>ブロック崩し</h1>
+            <p class="subtitle">BREAKOUT GAME</p>
+            <button id="start-button" class="menu-button">ゲームスタート</button>
+            <div class="controls-info">
+                <h3>操作方法</h3>
+                <p>← → または A/D: パドル移動</p>
+                <p>マウス: パドル追従</p>
+                <p>スペース: ゲーム開始/ポーズ</p>
+            </div>
+        </div>
+
+        <!-- ゲーム画面 -->
+        <div id="game-screen" class="screen" style="display: none;">
+            <div class="game-header">
+                <div class="score-display">
+                    <span>SCORE: </span>
+                    <span id="score">0</span>
+                </div>
+                <div class="level-display">
+                    <span>LEVEL: </span>
+                    <span id="level">1</span>
+                </div>
+                <div class="lives-display">
+                    <span>LIVES: </span>
+                    <span id="lives">3</span>
+                </div>
+            </div>
+            <canvas id="game-canvas" width="800" height="600"></canvas>
+        </div>
+
+        <!-- ゲームオーバー画面 -->
+        <div id="game-over-screen" class="screen" style="display: none;">
+            <h1>GAME OVER</h1>
+            <div class="final-score">
+                <p>最終スコア</p>
+                <p class="score-value" id="final-score">0</p>
+            </div>
+            <div class="high-score">
+                <p>ハイスコア</p>
+                <p class="score-value" id="high-score">0</p>
+            </div>
+            <button id="retry-button" class="menu-button">もう一度プレイ</button>
+            <button id="title-button-gameover" class="menu-button">タイトルに戻る</button>
+        </div>
+
+        <!-- ステージクリア画面 -->
+        <div id="stage-clear-screen" class="screen" style="display: none;">
+            <h1>STAGE CLEAR!</h1>
+            <div class="stage-info">
+                <p>ステージ <span id="cleared-stage">1</span> クリア！</p>
+            </div>
+            <div class="clear-bonus">
+                <p>クリアボーナス</p>
+                <p class="score-value" id="clear-bonus">1000</p>
+            </div>
+            <div class="current-score">
+                <p>現在のスコア</p>
+                <p class="score-value" id="current-score">0</p>
+            </div>
+            <button id="next-stage-button" class="menu-button">次のステージへ</button>
+            <button id="title-button-clear" class="menu-button">タイトルに戻る</button>
+        </div>
+
+        <!-- ポーズ画面（オーバーレイ） -->
+        <div id="pause-overlay" class="overlay" style="display: none;">
+            <div class="pause-content">
+                <h2>PAUSE</h2>
+                <p>スペースキーで再開</p>
+                <button id="resume-button" class="menu-button">ゲーム再開</button>
+                <button id="title-button-pause" class="menu-button">タイトルに戻る</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ゲームスクリプト -->
+    <script src="js/game.js"></script>
+    <script src="js/ui.js"></script>
+</body>
+</html>
