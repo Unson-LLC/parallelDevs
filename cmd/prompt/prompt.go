@@ -211,6 +211,19 @@ func executePrompt(ctx context.Context, args []string) error {
 				continue
 			}
 
+			// Copy CLAUDE-WORKER.md to the worktree as CLAUDE.md
+			workerMdPath := filepath.Join(filepath.Dir(os.Args[0]), "CLAUDE-WORKER.md")
+			targetMdPath := filepath.Join(worktreePath, "CLAUDE.md")
+			if _, err := os.Stat(workerMdPath); err == nil {
+				copyCmd := fmt.Sprintf("cp %s %s", workerMdPath, targetMdPath)
+				copyExec := exec.CommandContext(ctx, "sh", "-c", copyCmd)
+				if err := copyExec.Run(); err != nil {
+					log.Warn("Failed to copy CLAUDE-WORKER.md", "error", err)
+				} else {
+					log.Debug("Copied CLAUDE-WORKER.md to worktree")
+				}
+			}
+
 			// Create tmux session
 			cmd = fmt.Sprintf("tmux new-session -d -s %s -c %s", sessionName, worktreePath)
 			cmdExec = exec.CommandContext(ctx, "sh", "-c", cmd)
