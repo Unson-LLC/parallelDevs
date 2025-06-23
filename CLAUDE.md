@@ -75,6 +75,13 @@ isGameOver()     // 状態判定（checkGameOver()は使わない）
 - 実装内容の要約
 - テスト結果の報告
 - 懸念事項があれば報告
+- **重要: 作業完了時に必ず以下のコマンドを実行**
+  ```bash
+  touch .uzi-task-completed
+  echo "タスク完了: $(date)" >> .uzi-task-completed
+  echo "エージェント: $USER" >> .uzi-task-completed
+  echo "タスク: 与えられたタスクの概要" >> .uzi-task-completed
+  ```
 
 ## 禁止事項
 

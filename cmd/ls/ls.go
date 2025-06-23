@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -93,7 +94,7 @@ func getPaneContent(sessionName string) (string, error) {
 	return string(output), nil
 }
 
-func getAgentStatus(sessionName string) string {
+func getAgentStatus(sessionName string, hasWorked bool) string {
 	content, err := getPaneContent(sessionName)
 	if err != nil {
 		return "unknown"
@@ -102,15 +103,49 @@ func getAgentStatus(sessionName string) string {
 	if strings.Contains(content, "esc to interrupt") || strings.Contains(content, "Thinking") {
 		return "running"
 	}
-	return "ready"
+	
+	// マーカーファイルによる完了検出
+	if !hasWorked {
+		// StateManagerから worktree path を取得
+		sm := state.NewStateManager()
+		if sm != nil {
+			// stateファイルからワークツリー情報を取得
+			states := make(map[string]state.AgentState)
+			if data, err := os.ReadFile(sm.GetStatePath()); err == nil {
+				if err := json.Unmarshal(data, &states); err == nil {
+					if agentState, ok := states[sessionName]; ok && agentState.WorktreePath != "" {
+						// マーカーファイルのパスを構築
+						markerPath := filepath.Join(agentState.WorktreePath, ".uzi-task-completed")
+						if _, err := os.Stat(markerPath); err == nil {
+							// マーカーファイルが存在 → 自動的にreadyへ
+							go func() {
+								if err := sm.MarkWorkCompleted(sessionName); err != nil {
+									// エラーは無視（ログに記録されている）
+								}
+							}()
+							return "ready"
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	// 作業経験の有無で ready と idle を区別
+	if hasWorked {
+		return "ready"
+	}
+	return "idle"
 }
 
 func formatStatus(status string) string {
 	switch status {
+	case "idle":
+		return "\033[34midle\033[0m" // Blue - 初期状態
 	case "ready":
-		return "\033[32mready\033[0m" // Green
+		return "\033[32mready\033[0m" // Green - 作業完了状態
 	case "running":
-		return "\033[33mrunning\033[0m" // Orange/Yellow
+		return "\033[33mrunning\033[0m" // Orange/Yellow - 実行中
 	default:
 		return status
 	}
@@ -130,7 +165,7 @@ func formatTime(t time.Time) string {
 	return t.Format("Jan 02")
 }
 
-func getDetailedAgentStatus(sessionName string, lastUpdate time.Time) (string, string) {
+func getDetailedAgentStatus(sessionName string, hasWorked bool, lastUpdate time.Time) (string, string) {
 	content, err := getPaneContent(sessionName)
 	if err != nil {
 		return "error", "❌"
@@ -146,7 +181,11 @@ func getDetailedAgentStatus(sessionName string, lastUpdate time.Time) (string, s
 		return "running", "🏃"
 	}
 
-	return "ready", "✅"
+	// 作業経験の有無で ready と idle を区別
+	if hasWorked {
+		return "ready", "✅"
+	}
+	return "idle", "💤"
 }
 
 // sessionInfo holds session information for sorting and display
@@ -195,7 +234,7 @@ func printDetailedSessionsToWriter(w io.Writer, stateManager *state.StateManager
 		}
 
 		// Get detailed status with icon
-		status, icon := getDetailedAgentStatus(sessionName, state.UpdatedAt)
+		status, icon := getDetailedAgentStatus(sessionName, state.HasWorked, state.UpdatedAt)
 
 		// Get git diff details
 		var fileStats string
@@ -321,7 +360,7 @@ func printSessionsToWriter(w io.Writer, stateManager *state.StateManager, active
 			agentName = strings.Join(parts[3:], "-")
 		}
 
-		status := getAgentStatus(sessionName)
+		status := getAgentStatus(sessionName, state.HasWorked)
 		insertions, deletions := getGitDiffTotals(sessionName, stateManager)
 
 		// Format diff stats with colors

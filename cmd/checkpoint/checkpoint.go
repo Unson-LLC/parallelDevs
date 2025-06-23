@@ -151,6 +151,11 @@ func executeCheckpoint(ctx context.Context, args []string) error {
 		return fmt.Errorf("error rebasing agent changes: %v", err)
 	}
 
+	// Mark work as completed for this agent
+	if err := sm.MarkWorkCompleted(sessionToCheckpoint); err != nil {
+		log.Warn("Failed to mark work as completed", "session", sessionToCheckpoint, "error", err)
+	}
+
 	fmt.Printf("Successfully checkpointed changes from agent: %s\n", agentName)
 	fmt.Printf("Successfully committed changes with message: %s\n", commitMessage)
 	return nil

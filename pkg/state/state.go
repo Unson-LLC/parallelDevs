@@ -13,15 +13,18 @@ import (
 )
 
 type AgentState struct {
-	GitRepo      string    `json:"git_repo"`
-	BranchFrom   string    `json:"branch_from"`
-	BranchName   string    `json:"branch_name"`
-	Prompt       string    `json:"prompt"`
-	WorktreePath string    `json:"worktree_path"`
-	Port         int       `json:"port,omitempty"`
-	Model        string    `json:"model"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	GitRepo      string     `json:"git_repo"`
+	BranchFrom   string     `json:"branch_from"`
+	BranchName   string     `json:"branch_name"`
+	Prompt       string     `json:"prompt"`
+	WorktreePath string     `json:"worktree_path"`
+	Port         int        `json:"port,omitempty"`
+	Model        string     `json:"model"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+	HasWorked    bool       `json:"has_worked"`              // 一度でも作業したかのフラグ
+	WorkCount    int        `json:"work_count"`              // 作業回数カウント
+	LastWorkedAt *time.Time `json:"last_worked_at,omitempty"` // 最後に作業した時刻
 }
 
 type StateManager struct {
@@ -131,11 +134,18 @@ func (sm *StateManager) SaveStateWithPort(prompt, branchName, sessionName, workt
 		Port:         port,
 		Model:        model,
 		UpdatedAt:    now,
+		HasWorked:    false, // 初期状態では作業未実施
+		WorkCount:    0,     // 作業回数0で初期化
+		LastWorkedAt: nil,   // 最後の作業時刻は未設定
 	}
 
 	// Set created time if this is a new entry
 	if existing, exists := states[sessionName]; exists {
 		agentState.CreatedAt = existing.CreatedAt
+		// 既存エージェントの場合は作業履歴を保持
+		agentState.HasWorked = existing.HasWorked
+		agentState.WorkCount = existing.WorkCount
+		agentState.LastWorkedAt = existing.LastWorkedAt
 	} else {
 		agentState.CreatedAt = now
 	}
@@ -234,4 +244,46 @@ func (sm *StateManager) GetWorktreeInfo(sessionName string) (*AgentState, error)
 	}
 
 	return &state, nil
+}
+
+// MarkWorkCompleted marks that an agent has completed work
+func (sm *StateManager) MarkWorkCompleted(sessionName string) error {
+	if err := sm.ensureStateDir(); err != nil {
+		return err
+	}
+
+	// Load existing state
+	states := make(map[string]AgentState)
+	if data, err := os.ReadFile(sm.statePath); err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("no state file found")
+		}
+		return err
+	} else {
+		if err := json.Unmarshal(data, &states); err != nil {
+			return err
+		}
+	}
+
+	// Update the specific session
+	state, exists := states[sessionName]
+	if !exists {
+		return fmt.Errorf("session %s not found", sessionName)
+	}
+
+	now := time.Now()
+	state.HasWorked = true
+	state.WorkCount++
+	state.LastWorkedAt = &now
+	state.UpdatedAt = now
+
+	states[sessionName] = state
+
+	// Save to file
+	data, err := json.MarshalIndent(states, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(sm.statePath, data, 0644)
 }
