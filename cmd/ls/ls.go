@@ -395,8 +395,8 @@ func executeLs(ctx context.Context, args []string) error {
 	}
 
 	if *watchMode {
-		// Watch mode - refresh every 2 seconds to reduce flicker
-		ticker := time.NewTicker(2 * time.Second)
+		// Watch mode - refresh every 5 seconds to reduce flicker
+		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 
 		// カーソルを非表示にする
