@@ -141,11 +141,6 @@ func getDetailedAgentStatus(sessionName string, lastUpdate time.Time) (string, s
 		return "error", "❌"
 	}
 
-	// Check if stuck (no update for 5+ minutes)
-	if time.Since(lastUpdate) > 5*time.Minute {
-		return "stuck", "⚠️"
-	}
-
 	// Check if running
 	if strings.Contains(content, "esc to interrupt") || strings.Contains(content, "Thinking") {
 		return "running", "🏃"
