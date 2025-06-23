@@ -113,23 +113,36 @@ export class BreakoutGame {
      * ゲーム開始
      */
     startGame() {
-        // ゲーム状態をリセット
-        this.currentStage = 1;
-        this.scoreManager.reset();
-        this.lifeManager.reset();
-        this.gameState.reset();
+        console.log('startGame() メソッドが呼び出されました');
         
-        // ステージの初期化
-        this.initStage();
-        
-        // ゲーム画面に切り替え
-        this.gameState.changeState('PLAYING');
-        this.uiManager.showScreen('game');
-        this.uiManager.updateDisplay(
-            this.scoreManager.getCurrentScore(),
-            this.currentStage,
-            this.lifeManager.getLives()
-        );
+        try {
+            console.log('ゲーム状態をリセット中...');
+            // ゲーム状態をリセット
+            this.currentStage = 1;
+            this.scoreManager.reset();
+            this.lifeManager.reset();
+            this.gameState.reset();
+            
+            console.log('ステージを初期化中...');
+            // ステージの初期化
+            this.initStage();
+            
+            console.log('ゲーム画面に切り替え中...');
+            // ゲーム画面に切り替え
+            this.gameState.changeState('PLAYING');
+            this.uiManager.showScreen('game');
+            this.uiManager.updateDisplay(
+                this.scoreManager.getCurrentScore(),
+                this.currentStage,
+                this.lifeManager.getLives()
+            );
+            
+            console.log('ゲーム開始処理が正常に完了しました');
+        } catch (error) {
+            console.error('ゲーム開始中にエラーが発生しました:', error);
+            console.error('エラースタック:', error.stack);
+            alert('ゲームの開始に失敗しました。コンソールを確認してください。');
+        }
     }
     
     /**
