@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ブロック崩し統合テスト</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>ブロック崩しゲーム統合テスト</h1>
+    
+    <div class="test-section">
+        <h2>モジュール読み込みテスト</h2>
+        <div id="module-test"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>エラーログ</h2>
+        <div id="error-log"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>ゲーム起動テスト</h2>
+        <button onclick="startGameTest()">ゲームを起動</button>
+        <div id="game-status"></div>
+    </div>
+
+    <script type="module">
+        const moduleTest = document.getElementById('module-test');
+        const errorLog = document.getElementById('error-log');
+        const gameStatus = document.getElementById('game-status');
+        
+        // エラーハンドリング
+        window.addEventListener('error', (e) => {
+            errorLog.innerHTML += `<div class="error">エラー: ${e.message} (${e.filename}:${e.lineno}:${e.colno})</div>`;
+        });
+        
+        window.addEventListener('unhandledrejection', (e) => {
+            errorLog.innerHTML += `<div class="error">Promise拒否: ${e.reason}</div>`;
+        });
+        
+        // モジュール読み込みテスト
+        async function testModules() {
+            const modules = [
+                './src/js/physics.js',
+                './src/js/collision.js',
+                './src/js/gameState.js',
+                './src/js/scoreManager.js',
+                './src/js/lifeManager.js',
+                './src/js/ui.js',
+                './src/js/entities/Paddle.js',
+                './src/js/entities/Ball.js',
+                './src/js/entities/Block.js',
+                './src/js/main.js'
+            ];
+            
+            for (const modulePath of modules) {
+                try {
+                    const module = await import(modulePath);
+                    moduleTest.innerHTML += `<div class="success">✓ ${modulePath} 読み込み成功</div>`;
+                    
+                    // エクスポートされているクラス/関数を表示
+                    const exports = Object.keys(module);
+                    if (exports.length > 0) {
+                        moduleTest.innerHTML += `<pre>  エクスポート: ${exports.join(', ')}</pre>`;
+                    }
+                } catch (error) {
+                    moduleTest.innerHTML += `<div class="error">✗ ${modulePath} 読み込み失敗: ${error.message}</div>`;
+                }
+            }
+        }
+        
+        // ゲーム起動テスト
+        window.startGameTest = async function() {
+            try {
+                gameStatus.innerHTML = '<div>ゲームを起動中...</div>';
+                
+                // main.jsからBreakoutGameをインポート
+                const { BreakoutGame } = await import('./src/js/main.js');
+                
+                // ゲームコンテナを作成
+                const container = document.createElement('div');
+                container.className = 'game-container';
+                container.innerHTML = `
+                    <canvas id="gameCanvas" width="800" height="600" style="border: 1px solid black;"></canvas>
+                    <div id="titleScreen" style="display:none;"></div>
+                    <div id="gameScreen" style="display:none;"></div>
+                    <div id="gameOverScreen" style="display:none;"></div>
+                    <div id="stageClearScreen" style="display:none;"></div>
+                    <div id="pauseScreen" style="display:none;"></div>
+                    <button id="startButton">Start</button>
+                    <button id="retryButton">Retry</button>
+                    <button id="nextStageButton">Next</button>
+                    <select id="difficulty"><option value="normal">Normal</option></select>
+                    <div id="score">0</div>
+                    <div id="level">1</div>
+                    <div id="lives">3</div>
+                `;
+                
+                document.body.appendChild(container);
+                
+                // ゲームインスタンスを作成
+                const game = new BreakoutGame();
+                
+                gameStatus.innerHTML = '<div class="success">✓ ゲーム起動成功！</div>';
+                gameStatus.innerHTML += '<div>キャンバスが下部に表示されているはずです。</div>';
+                
+            } catch (error) {
+                gameStatus.innerHTML = `<div class="error">✗ ゲーム起動失敗: ${error.message}</div>`;
+                console.error(error);
+            }
+        };
+        
+        // テスト実行
+        testModules();
+    </script>
+</body>
+</html>
