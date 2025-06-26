@@ -4,7 +4,8 @@
   "description": "並列開発システム",
   "main": "uzi.go",
   "scripts": {
-    "test": "go test ./..."
+    "test": "jest",
+    "test:go": "go test ./..."
   },
   "keywords": [
     "parallel",
@@ -12,5 +13,17 @@
     "agents"
   ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@jest/globals": "^29.7.0",
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "transform": {},
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ]
+  }
 }
