@@ -169,16 +169,12 @@ func TestStatusTransitions(t *testing.T) {
 				defer os.Remove(markerPath)
 			}
 			
-			// StatusManagerのテスト（まだ実装されていないのでスキップ）
-			t.Skip("StatusManager implementation needed")
+			// ここで変数を使用しないため、コメントアウト
+			_ = tmuxClient
+			_ = stateManager
 			
-			// TODO: 実際のテストコード
-			// sm := NewStatusManager(tmuxClient, stateManager)
-			// status, err := sm.GetStatus(tt.sessionName)
-			// 
-			// if status != tt.expectedStatus {
-			//     t.Errorf("expected status %s, got %s", tt.expectedStatus, status)
-			// }
+			// StatusManagerのテスト（まだモックの実装が必要なのでスキップ）
+			t.Skip("Mock implementation needed for full testing")
 		})
 	}
 }

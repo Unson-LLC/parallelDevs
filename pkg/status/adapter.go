@@ -3,7 +3,6 @@ package status
 import (
 	"encoding/json"
 	"os"
-	"time"
 
 	"github.com/devflowinc/uzi/pkg/state"
 )

@@ -9,7 +9,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -18,6 +17,7 @@ import (
 
 	"github.com/devflowinc/uzi/pkg/config"
 	"github.com/devflowinc/uzi/pkg/state"
+	"github.com/devflowinc/uzi/pkg/status"
 
 	"github.com/peterbourgon/ff/v3/ffcli"
 )
@@ -95,59 +95,49 @@ func getPaneContent(sessionName string) (string, error) {
 }
 
 func getAgentStatus(sessionName string, hasWorked bool) string {
-	content, err := getPaneContent(sessionName)
+	// 新しいステータスシステムを使用
+	sm := state.NewStateManager()
+	if sm == nil {
+		return "unknown"
+	}
+	
+	// StatusManagerを作成
+	stateAdapter := status.NewStateAdapter(sm)
+	tmuxClient := status.DefaultTmuxClient()
+	statusManager := status.NewStatusManager(tmuxClient, stateAdapter)
+	
+	// ステータスを取得
+	st, err := statusManager.GetStatus(sessionName)
 	if err != nil {
 		return "unknown"
 	}
-
-	if strings.Contains(content, "esc to interrupt") || strings.Contains(content, "Thinking") {
-		return "running"
-	}
 	
-	// マーカーファイルによる完了検出
-	if !hasWorked {
-		// StateManagerから worktree path を取得
-		sm := state.NewStateManager()
-		if sm != nil {
-			// stateファイルからワークツリー情報を取得
-			states := make(map[string]state.AgentState)
-			if data, err := os.ReadFile(sm.GetStatePath()); err == nil {
-				if err := json.Unmarshal(data, &states); err == nil {
-					if agentState, ok := states[sessionName]; ok && agentState.WorktreePath != "" {
-						// マーカーファイルのパスを構築
-						markerPath := filepath.Join(agentState.WorktreePath, ".uzi-task-completed")
-						if _, err := os.Stat(markerPath); err == nil {
-							// マーカーファイルが存在 → 自動的にreadyへ
-							go func() {
-								if err := sm.MarkWorkCompleted(sessionName); err != nil {
-									// エラーは無視（ログに記録されている）
-								}
-							}()
-							return "ready"
-						}
-					}
-				}
+	// マーカーファイルによる自動完了マーク（後方互換性のため）
+	if st == status.StatusReady && !hasWorked {
+		go func() {
+			if err := sm.MarkWorkCompleted(sessionName); err != nil {
+				// エラーは無視（ログに記録されている）
 			}
-		}
+		}()
 	}
 	
-	// 作業経験の有無で ready と idle を区別
-	if hasWorked {
-		return "ready"
-	}
-	return "idle"
+	return st
 }
 
-func formatStatus(status string) string {
-	switch status {
-	case "idle":
+func formatStatus(st string) string {
+	switch st {
+	case status.StatusIdle:
 		return "\033[34midle\033[0m" // Blue - 初期状態
-	case "ready":
+	case status.StatusReady:
 		return "\033[32mready\033[0m" // Green - 作業完了状態
-	case "running":
+	case status.StatusRunning:
 		return "\033[33mrunning\033[0m" // Orange/Yellow - 実行中
+	case status.StatusMerged:
+		return "\033[36mmerged\033[0m" // Cyan - マージ済み
+	case status.StatusError:
+		return "\033[31merror\033[0m" // Red - エラー
 	default:
-		return status
+		return st
 	}
 }
 
@@ -166,26 +156,39 @@ func formatTime(t time.Time) string {
 }
 
 func getDetailedAgentStatus(sessionName string, hasWorked bool, lastUpdate time.Time) (string, string) {
-	content, err := getPaneContent(sessionName)
+	// 新しいステータスシステムを使用
+	sm := state.NewStateManager()
+	if sm == nil {
+		return "error", "❌"
+	}
+	
+	// StatusManagerを作成
+	stateAdapter := status.NewStateAdapter(sm)
+	tmuxClient := status.DefaultTmuxClient()
+	statusManager := status.NewStatusManager(tmuxClient, stateAdapter)
+	
+	// 詳細ステータスを取得
+	detailedStatus, err := statusManager.GetDetailedStatus(sessionName)
 	if err != nil {
 		return "error", "❌"
 	}
-
-	// Check for error in pane content
-	if strings.Contains(content, "Error:") || strings.Contains(content, "error:") {
-		return "error", "❌"
+	
+	// マーカーファイルによる自動完了マーク（後方互換性のため）
+	if detailedStatus.Status == status.StatusReady && !hasWorked {
+		go func() {
+			if err := sm.MarkWorkCompleted(sessionName); err != nil {
+				// エラーは無視
+			}
+		}()
 	}
-
-	// Check if running
-	if strings.Contains(content, "esc to interrupt") || strings.Contains(content, "Thinking") {
-		return "running", "🏃"
+	
+	// stuck状態の場合は警告アイコンに変更
+	icon := detailedStatus.Icon
+	if detailedStatus.IsStuck {
+		icon = "⚠️"
 	}
-
-	// 作業経験の有無で ready と idle を区別
-	if hasWorked {
-		return "ready", "✅"
-	}
-	return "idle", "💤"
+	
+	return detailedStatus.Status, icon
 }
 
 // sessionInfo holds session information for sorting and display
