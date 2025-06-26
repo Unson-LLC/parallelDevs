@@ -314,6 +314,16 @@ func executePrompt(ctx context.Context, args []string) error {
 
 			assignedPorts = append(assignedPorts, selectedPort)
 
+			// Clear marker file if exists
+			markerPath := filepath.Join(worktreePath, ".uzi-task-completed")
+			if _, err := os.Stat(markerPath); err == nil {
+				if err := os.Remove(markerPath); err != nil {
+					log.Warn("Failed to remove marker file", "path", markerPath, "error", err)
+				} else {
+					log.Debug("Cleared marker file", "path", markerPath)
+				}
+			}
+
 			// Always run send-keys command to the agent pane
 			tmuxCmd := fmt.Sprintf("tmux send-keys -t %s:agent '%s \"%%s\"' C-m", sessionName, commandToUse)
 			tmuxCmdExec := exec.CommandContext(ctx, "sh", "-c", fmt.Sprintf(tmuxCmd, promptText))

@@ -25,6 +25,7 @@ type AgentState struct {
 	HasWorked    bool       `json:"has_worked"`              // 一度でも作業したかのフラグ
 	WorkCount    int        `json:"work_count"`              // 作業回数カウント
 	LastWorkedAt *time.Time `json:"last_worked_at,omitempty"` // 最後に作業した時刻
+	LastMergedAt *time.Time `json:"last_merged_at,omitempty"` // 最後にマージした時刻
 }
 
 type StateManager struct {
@@ -275,6 +276,46 @@ func (sm *StateManager) MarkWorkCompleted(sessionName string) error {
 	state.HasWorked = true
 	state.WorkCount++
 	state.LastWorkedAt = &now
+	state.UpdatedAt = now
+
+	states[sessionName] = state
+
+	// Save to file
+	data, err := json.MarshalIndent(states, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(sm.statePath, data, 0644)
+}
+
+// MarkAsMerged marks that an agent's changes have been merged
+func (sm *StateManager) MarkAsMerged(sessionName string) error {
+	if err := sm.ensureStateDir(); err != nil {
+		return err
+	}
+
+	// Load existing state
+	states := make(map[string]AgentState)
+	if data, err := os.ReadFile(sm.statePath); err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("no state file found")
+		}
+		return err
+	} else {
+		if err := json.Unmarshal(data, &states); err != nil {
+			return err
+		}
+	}
+
+	// Update the specific session
+	state, exists := states[sessionName]
+	if !exists {
+		return fmt.Errorf("session %s not found", sessionName)
+	}
+
+	now := time.Now()
+	state.LastMergedAt = &now
 	state.UpdatedAt = now
 
 	states[sessionName] = state

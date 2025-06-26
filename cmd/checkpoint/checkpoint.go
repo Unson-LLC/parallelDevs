@@ -155,6 +155,11 @@ func executeCheckpoint(ctx context.Context, args []string) error {
 	if err := sm.MarkWorkCompleted(sessionToCheckpoint); err != nil {
 		log.Warn("Failed to mark work as completed", "session", sessionToCheckpoint, "error", err)
 	}
+	
+	// Mark as merged
+	if err := sm.MarkAsMerged(sessionToCheckpoint); err != nil {
+		log.Warn("Failed to mark as merged", "session", sessionToCheckpoint, "error", err)
+	}
 
 	fmt.Printf("Successfully checkpointed changes from agent: %s\n", agentName)
 	fmt.Printf("Successfully committed changes with message: %s\n", commitMessage)

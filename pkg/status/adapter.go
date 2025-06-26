@@ -30,8 +30,8 @@ func (sa *StateAdapter) GetWorktreeInfo(sessionName string) (*AgentState, error)
 	}
 
 	if agentState, ok := states[sessionName]; ok {
-		// マージ状態を判定（LastMergedAtフィールドが追加されるまでは仮の判定）
-		isMerged := false
+		// マージ状態を判定（LastMergedAtが存在すればマージ済み）
+		isMerged := agentState.LastMergedAt != nil
 		
 		return &AgentState{
 			WorktreePath: agentState.WorktreePath,
@@ -45,8 +45,8 @@ func (sa *StateAdapter) GetWorktreeInfo(sessionName string) (*AgentState, error)
 
 // MarkAsMerged - エージェントをマージ済みとしてマーク
 func (sa *StateAdapter) MarkAsMerged(sessionName string) error {
-	// 現在のMarkWorkCompletedを使用（将来的にはマージ専用のフィールドを追加）
-	return sa.stateManager.MarkWorkCompleted(sessionName)
+	// 新しいMarkAsMergedメソッドを使用
+	return sa.stateManager.MarkAsMerged(sessionName)
 }
 
 // DefaultTmuxClient - デフォルトのTmuxClient実装を取得
