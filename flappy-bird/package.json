@@ -2,8 +2,11 @@
   "name": "flappy-bird",
   "version": "1.0.0",
   "type": "module",
+  "description": "Flappy Bird game implementation with TDD",
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "test:watch": "node --experimental-vm-modules node_modules/.bin/jest --watch",
+    "test:coverage": "node --experimental-vm-modules node_modules/.bin/jest --coverage"
   },
   "devDependencies": {
     "jest": "^29.0.0",
