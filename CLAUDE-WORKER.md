@@ -36,10 +36,13 @@
 
 作業完了時に必ず以下のコマンドを実行：
 ```bash
-touch .uzi-task-completed
-echo "タスク完了: $(date)" >> .uzi-task-completed
-echo "エージェント: $USER" >> .uzi-task-completed
-echo "タスク: 与えられたタスクの概要" >> .uzi-task-completed
+# worktree名を取得して一意のファイル名を作成
+WORKTREE_NAME=$(basename $(pwd))
+touch .uzi-task-completed-${WORKTREE_NAME}
+echo "タスク完了: $(date)" >> .uzi-task-completed-${WORKTREE_NAME}
+echo "エージェント: $USER" >> .uzi-task-completed-${WORKTREE_NAME}
+echo "ワークツリー: ${WORKTREE_NAME}" >> .uzi-task-completed-${WORKTREE_NAME}
+echo "タスク: 与えられたタスクの概要" >> .uzi-task-completed-${WORKTREE_NAME}
 ```
 
 ## 禁止事項
