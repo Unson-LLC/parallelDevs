@@ -1,0 +1,25 @@
+{
+  "name": "breakout-game",
+  "version": "1.0.0",
+  "description": "Classic Breakout Game implemented with TDD",
+  "main": "src/main.js",
+  "type": "module",
+  "scripts": {
+    "start": "serve .",
+    "dev": "serve . --listen 3000",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "keywords": ["breakout", "game", "canvas", "javascript", "tdd"],
+  "author": "Uzi Parallel Development Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.22.0",
+    "@babel/preset-env": "^7.22.0",
+    "jest": "^29.5.0",
+    "jest-environment-jsdom": "^29.5.0"
+  },
+  "dependencies": {
+    "serve": "^14.2.0"
+  }
+}
