@@ -59,28 +59,16 @@ class Bird {
     draw(ctx) {
         if (!ctx) return;
         
-        ctx.save();
+        console.log('Bird draw called at x:', this.x, 'y:', this.y, 'alive:', this.alive);
         
-        // 鳥の回転（速度に応じて）
-        const rotation = Math.min(Math.max(this.velocity * 0.05, -0.5), 0.5);
-        ctx.translate(this.x + this.width/2, this.y + this.height/2);
-        ctx.rotate(rotation);
-        
-        // 鳥の本体
+        // シンプルな矩形描画（デバッグ用）
         ctx.fillStyle = this.color;
-        ctx.fillRect(-this.width/2, -this.height/2, this.width, this.height);
+        ctx.fillRect(this.x, this.y, this.width, this.height);
         
-        // 鳥の目
-        ctx.fillStyle = '#FFF';
-        ctx.fillRect(-this.width/2 + 20, -this.height/2 + 3, 8, 8);
-        ctx.fillStyle = '#000';
-        ctx.fillRect(-this.width/2 + 22, -this.height/2 + 5, 4, 4);
-        
-        // くちばし
-        ctx.fillStyle = '#FF8C00';
-        ctx.fillRect(this.width/2 - 15, -3, 10, 6);
-        
-        ctx.restore();
+        // 目印として黒い枠線を追加
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(this.x, this.y, this.width, this.height);
     }
     
     // 当たり判定用の矩形を取得

@@ -99,7 +99,10 @@ class Game {
 
     // 鳥を描画
     if (this.bird) {
+      console.log('Game drawing bird, bird exists:', !!this.bird, 'ctx exists:', !!this.ctx);
       this.bird.draw(this.ctx);
+    } else {
+      console.log('No bird to draw!');
     }
 
     // パイプを描画
