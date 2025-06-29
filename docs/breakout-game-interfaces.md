@@ -1,139 +1,186 @@
-# ブロック崩しゲーム - インターフェース定義書
+# ブロック崩しゲーム インターフェース定義書
 
-## 概要
-このドキュメントは、ブロック崩しWebアプリケーションの各モジュールのインターフェース定義を記載しています。
-すべてのモジュールは名前付きエクスポート（`export { ClassName }`）を使用し、`export default`は使用しません。
+## モジュール構成
 
-## エンティティ層
+### 1. エンティティ層
+- Ball（ボール）
+- Paddle（パドル）
+- Block（ブロック）
 
-### モジュール: Ball
+### 2. マネージャー層
+- GameManager（ゲーム全体管理）
+- ScoreManager（スコア管理）
+- LivesManager（ライフ管理）
+
+### 3. システム層
+- CollisionDetector（衝突判定）
+- InputHandler（入力制御）
+- Renderer（描画）
+
+### 4. UI層
+- UIManager（UI全体管理）
+- StartScreen（スタート画面）
+- GameOverScreen（ゲームオーバー画面）
+
+## インターフェース定義
+
+### エンティティ層
+
+#### Ball
 - ファイルパス: `src/entities/Ball.js`
 - エクスポート形式: `export { Ball }`
 - 公開メソッド:
   - `constructor(x, y, radius, speedX, speedY)` - ボールの初期化
-  - `reset()` - 初期位置に戻す
-  - `update(dt)` - 位置更新（dt: デルタタイム）
+  - `update()` - 位置更新
   - `reverseX()` - X方向の速度反転
   - `reverseY()` - Y方向の速度反転
-  - `getPosition()` - {x: number, y: number}を返す
+  - `reset()` - 初期位置に戻す
+  - `getPosition()` - {x, y}を返す
   - `getRadius()` - 半径を返す
-  - `getVelocity()` - {x: number, y: number}速度を返す
+  - `getVelocity()` - {x, y}速度を返す
 
-### モジュール: Paddle
+#### Paddle
 - ファイルパス: `src/entities/Paddle.js`
 - エクスポート形式: `export { Paddle }`
 - 公開メソッド:
-  - `constructor(x, y, width, height)` - パドルの初期化
+  - `constructor(x, y, width, height, speed)` - パドルの初期化
+  - `moveLeft()` - 左に移動
+  - `moveRight()` - 右に移動
+  - `update(canvasWidth)` - 位置更新（境界チェック含む）
   - `reset()` - 初期位置に戻す
-  - `update(dt)` - 位置更新（dt: デルタタイム）
-  - `moveLeft()` - 左に移動開始
-  - `moveRight()` - 右に移動開始
-  - `stop()` - 移動停止
-  - `getPosition()` - {x: number, y: number}を返す
-  - `getDimensions()` - {width: number, height: number}を返す
+  - `getPosition()` - {x, y}を返す
+  - `getDimensions()` - {width, height}を返す
 
-### モジュール: Block
+#### Block
 - ファイルパス: `src/entities/Block.js`
 - エクスポート形式: `export { Block }`
 - 公開メソッド:
-  - `constructor(x, y, width, height, points)` - ブロックの初期化
-  - `hit()` - ヒット処理
-  - `isDestroyed()` - 破壊されたか判定（boolean）
-  - `getPosition()` - {x: number, y: number}を返す
-  - `getDimensions()` - {width: number, height: number}を返す
-  - `getPoints()` - ポイント数を返す（number）
+  - `constructor(x, y, width, height, color, points)` - ブロックの初期化
+  - `hit()` - ブロックがヒットされた
+  - `isDestroyed()` - 破壊されたかどうか
+  - `getPosition()` - {x, y}を返す
+  - `getDimensions()` - {width, height}を返す
+  - `getPoints()` - ポイント値を返す
+  - `getColor()` - 色を返す
 
-## コア層
+### マネージャー層
 
-### モジュール: GameEngine
-- ファイルパス: `src/core/GameEngine.js`
-- エクスポート形式: `export { GameEngine }`
-- 依存関係: Ball, Paddle, Block, CollisionDetector, ScoreManager, LivesManager
+#### GameManager
+- ファイルパス: `src/managers/GameManager.js`
+- エクスポート形式: `export { GameManager }`
 - 公開メソッド:
-  - `constructor(width, height)` - ゲームエンジンの初期化
-  - `reset()` - ゲームリセット
-  - `update(dt)` - ゲーム状態更新（dt: デルタタイム）
+  - `constructor()` - ゲームマネージャーの初期化
+  - `init()` - ゲーム初期化
   - `start()` - ゲーム開始
   - `pause()` - 一時停止
   - `resume()` - 再開
-  - `isGameOver()` - ゲームオーバー判定（boolean）
-  - `isLevelClear()` - レベルクリア判定（boolean）
-  - `getEntities()` - 全エンティティ取得 {ball, paddle, blocks[]}
+  - `reset()` - リセット
+  - `update()` - ゲーム状態更新
+  - `isGameOver()` - ゲームオーバー判定
+  - `isLevelComplete()` - レベルクリア判定
+  - `getState()` - 現在の状態を返す
+- 依存関係:
+  - Ball, Paddle, Block
+  - ScoreManager, LivesManager
+  - CollisionDetector
 
-### モジュール: CollisionDetector
-- ファイルパス: `src/core/CollisionDetector.js`
-- エクスポート形式: `export { CollisionDetector }`
-- 公開メソッド:
-  - `checkBallPaddleCollision(ball, paddle)` - ボールとパドルの衝突判定（boolean）
-  - `checkBallBlockCollision(ball, block)` - ボールとブロックの衝突判定（boolean）
-  - `checkBallWallCollision(ball, width, height)` - ボールと壁の衝突判定 {hitLeft, hitRight, hitTop, hitBottom}
-
-## 管理層
-
-### モジュール: ScoreManager
+#### ScoreManager
 - ファイルパス: `src/managers/ScoreManager.js`
 - エクスポート形式: `export { ScoreManager }`
 - 公開メソッド:
-  - `reset()` - スコアリセット
-  - `addScore(points)` - スコア加算（points: number）
-  - `getScore()` - 現在のスコア取得（number）
-  - `getHighScore()` - ハイスコア取得（number）
-  - `saveHighScore()` - ハイスコア保存
+  - `reset()` - スコアをリセット
+  - `addScore(points)` - スコアを加算
+  - `getScore()` - 現在のスコアを取得
+  - `getHighScore()` - ハイスコアを取得
 
-### モジュール: LivesManager
+#### LivesManager
 - ファイルパス: `src/managers/LivesManager.js`
 - エクスポート形式: `export { LivesManager }`
 - 公開メソッド:
-  - `constructor(initialLives)` - 初期ライフ数設定（initialLives: number）
-  - `reset()` - ライフリセット
-  - `loseLife()` - ライフ減少
-  - `getLives()` - 残ライフ数取得（number）
-  - `isGameOver()` - ゲームオーバー判定（boolean）
+  - `constructor(initialLives)` - 初期ライフ数で初期化
+  - `reset()` - ライフをリセット
+  - `loseLife()` - ライフを1つ減らす
+  - `getLives()` - 残りライフ数を取得
+  - `isGameOver()` - ライフが0かどうか
 
-## UI層
+### システム層
 
-### モジュール: Renderer
-- ファイルパス: `src/ui/Renderer.js`
+#### CollisionDetector
+- ファイルパス: `src/systems/CollisionDetector.js`
+- エクスポート形式: `export { CollisionDetector }`
+- 公開メソッド:
+  - `checkBallWallCollision(ball, canvasWidth, canvasHeight)` - 壁との衝突判定
+  - `checkBallPaddleCollision(ball, paddle)` - パドルとの衝突判定
+  - `checkBallBlockCollision(ball, block)` - ブロックとの衝突判定
+  - `checkBallBottomCollision(ball, canvasHeight)` - 底面との衝突判定
+
+#### InputHandler
+- ファイルパス: `src/systems/InputHandler.js`
+- エクスポート形式: `export { InputHandler }`
+- 公開メソッド:
+  - `constructor()` - 入力ハンドラーの初期化
+  - `init()` - イベントリスナーの設定
+  - `isLeftPressed()` - 左キーが押されているか
+  - `isRightPressed()` - 右キーが押されているか
+  - `isSpacePressed()` - スペースキーが押されたか
+  - `isResetPressed()` - Rキーが押されたか
+  - `reset()` - 入力状態をリセット
+
+#### Renderer
+- ファイルパス: `src/systems/Renderer.js`
 - エクスポート形式: `export { Renderer }`
 - 公開メソッド:
-  - `constructor(canvas)` - キャンバス設定（canvas: HTMLCanvasElement）
+  - `constructor(canvas)` - キャンバスで初期化
   - `clear()` - 画面クリア
   - `drawBall(ball)` - ボール描画
   - `drawPaddle(paddle)` - パドル描画
   - `drawBlock(block)` - ブロック描画
-  - `drawScore(score)` - スコア描画（score: number）
-  - `drawLives(lives)` - ライフ描画（lives: number）
-  - `drawGameOver()` - ゲームオーバー画面描画
+  - `drawScore(score)` - スコア描画
+  - `drawLives(lives)` - ライフ描画
 
-### モジュール: InputHandler
-- ファイルパス: `src/ui/InputHandler.js`
-- エクスポート形式: `export { InputHandler }`
+### UI層
+
+#### UIManager
+- ファイルパス: `src/ui/UIManager.js`
+- エクスポート形式: `export { UIManager }`
 - 公開メソッド:
-  - `constructor()` - 入力ハンドラ初期化
-  - `onLeftPressed(callback)` - 左キー押下時のコールバック登録
-  - `onRightPressed(callback)` - 右キー押下時のコールバック登録
-  - `onKeyReleased(callback)` - キー解放時のコールバック登録
-  - `onSpacePressed(callback)` - スペースキー押下時のコールバック登録
-  - `destroy()` - イベントリスナー解除
+  - `constructor()` - UI管理の初期化
+  - `showStartScreen()` - スタート画面表示
+  - `hideStartScreen()` - スタート画面非表示
+  - `showGameOverScreen(score)` - ゲームオーバー画面表示
+  - `hideGameOverScreen()` - ゲームオーバー画面非表示
+  - `showLevelCompleteScreen()` - レベルクリア画面表示
+  - `hideLevelCompleteScreen()` - レベルクリア画面非表示
+  - `updateScore(score)` - スコア表示更新
+  - `updateLives(lives)` - ライフ表示更新
 
-## 実装の優先順位
+## 並列化可能なモジュール
 
-### Phase 1: エンティティ層（並列実装可能）
+以下のモジュールは依存関係がないため、並列実装可能：
+
+### グループ1（エンティティ）
 - Ball
 - Paddle
 - Block
 
-### Phase 2: コア機能
-- CollisionDetector
+### グループ2（独立マネージャー）
 - ScoreManager
 - LivesManager
 
-### Phase 3: ゲームエンジンとUI（並列実装可能）
-- GameEngine
-- Renderer
+### グループ3（システム）
+- CollisionDetector
 - InputHandler
+- Renderer
 
-### Phase 4: 統合とテスト
-- 全モジュールの統合
-- ゲームプレイテスト
-- パフォーマンス最適化
+### グループ4（UI）
+- StartScreen
+- GameOverScreen
+
+## 実装順序
+
+1. **フェーズ1**: インターフェース定義（完了）
+2. **フェーズ2**: 統合テスト作成
+3. **フェーズ3**: 並列実装
+   - グループ1〜4を同時に実装
+4. **フェーズ4**: GameManagerとUIManagerの実装
+5. **フェーズ5**: 統合とテスト
