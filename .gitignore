@@ -1,1 +1,45 @@
+# Binary
 uzi
+uzi-test
+
+# Dependencies
+node_modules/
+
+# Task tracking
+.uzi-task-completed*
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+
+# Editor files
+.vscode/
+.idea/
+
+# Local settings
+.claude/
+
+# Temporary files
+*.tmp
+*-temp.*
+*.backup
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+env/
+venv/
+
+# Test coverage
+coverage/
+.coverage
+*.cover
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
