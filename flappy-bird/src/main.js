@@ -1,7 +1,7 @@
 // main.js - Flappy Birdゲームのメインエントリーポイント（TDD t_wada方式実装）
 // 日本語コメントで実装、export defaultは使用しない
 
-import { Game } from './Game.js';
+import { Game } from './game.js';
 
 // グローバル変数（モジュールスコープ）
 let game = null;
@@ -22,11 +22,11 @@ export function startGame() {
   }
 
   // UI要素取得
-  scoreElement = document.getElementById('scoreDisplay');
-  statusElement = document.getElementById('gameStatus');
+  scoreElement = document.getElementById('score');
+  statusElement = document.getElementById('status');
 
-  // Gameインスタンス作成（800x600は標準的なサイズ）
-  game = new Game(canvas, 800, 600);
+  // Gameインスタンス作成（gameCanvasのIDを渡す）
+  game = new Game('gameCanvas');
 
   // キーボードイベントリスナー登録
   document.addEventListener('keydown', handleKeyInput);
@@ -58,12 +58,12 @@ export function gameLoop(timestamp) {
   lastTimestamp = timestamp;
 
   // ゲームインスタンスが存在し、実行中の場合のみ更新
-  if (game && game.isRunning) {
+  if (game && game.isRunning()) {
     // ゲーム状態更新
     game.update(deltaTime);
 
     // 描画処理
-    game.render();
+    game.draw();
   }
 
   // UI更新
@@ -85,14 +85,15 @@ function handleKeyInput(event) {
     case 'Space':
       // スペースキーでジャンプ
       event.preventDefault();
-      game.handleInput('jump');
+      game.handleInput();
       break;
     
     case 'Enter':
       // Enterキーでリスタート（ゲームオーバー時）
-      if (game.gameState === 'gameover') {
+      if (game.isGameOver()) {
         event.preventDefault();
         game.reset();
+        game.start();
       }
       break;
     
@@ -112,7 +113,7 @@ function handleMouseInput(event) {
 
   // マウスクリックでジャンプ
   event.preventDefault();
-  game.handleInput('jump');
+  game.handleInput();
 }
 
 /**
@@ -124,25 +125,18 @@ function updateUI() {
 
   // スコア表示更新
   if (scoreElement) {
-    scoreElement.textContent = `Score: ${game.score}`;
+    scoreElement.textContent = `スコア: ${game.getScore()}`;
   }
 
   // ゲーム状態表示更新
   if (statusElement) {
     let statusText = '';
-    switch (game.gameState) {
-      case 'menu':
-        statusText = 'Menu';
-        break;
-      case 'playing':
-        statusText = 'Playing';
-        break;
-      case 'gameover':
-        statusText = 'Game Over';
-        break;
-      default:
-        statusText = 'Unknown';
-        break;
+    if (game.isGameOver()) {
+      statusText = 'ゲームオーバー';
+    } else if (game.isRunning()) {
+      statusText = 'プレイ中';
+    } else {
+      statusText = '待機中';
     }
     statusElement.textContent = statusText;
   }

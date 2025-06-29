@@ -1,0 +1,30 @@
+{
+  "enabled": true,
+  "rules": [
+    {
+      "event_category": "STATUS",
+      "all_agents_idle": true,
+      "action": {
+        "type": "manager",
+        "message": "🎯 全Flappy Birdエージェントがidle/merged状態です。checkpoint実行とアプリ完成を確認してください。\n\n現在の状況:\n- Jessica (main.js): merged ✅\n- Stephanie (Game): idle\n- Eric (Pipe): idle  \n- Caroline (Bird): idle\n\n次のタスク:\n1. 残りエージェントのcheckpoint実行\n2. 統合テスト実行\n3. アプリ動作確認",
+        "timeout": 60
+      }
+    },
+    {
+      "event_category": "ERROR", 
+      "action": {
+        "type": "manager",
+        "message": "❌ エラーが発生しました: {description}\nエージェント: {agent}\n対応が必要です。",
+        "timeout": 30
+      }
+    },
+    {
+      "event_category": "COMPLETE",
+      "action": {
+        "type": "manager", 
+        "message": "✅ タスク完了: {description}\nエージェント: {agent}\n次のステップに進んでください。",
+        "timeout": 30
+      }
+    }
+  ]
+}
