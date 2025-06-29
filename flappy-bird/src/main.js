@@ -92,10 +92,13 @@ function handleKeyInput(event) {
     
     case 'Enter':
       // Enterキーでリスタート（ゲームオーバー時）
+      console.log('Enter key detected, game over:', game.isGameOver());
       if (game.isGameOver()) {
+        console.log('Restarting game...');
         event.preventDefault();
         game.reset();
         game.start();
+        console.log('Game restarted, running:', game.isRunning());
       }
       break;
     

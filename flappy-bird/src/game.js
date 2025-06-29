@@ -24,11 +24,17 @@ class Game {
    * ゲーム開始
    */
   start() {
+    console.log('Game.start() called');
     this.running = true;
     this.gameOver = false;
+    this.score = 0;
+    this.pipeSpawnTimer = 0;
     // 基本的な初期化（後で拡張）
+    console.log('Creating bird at 50, 200');
     this.bird = new Bird(50, 200);
+    console.log('Bird created:', this.bird.x, this.bird.y, this.bird.alive);
     this.pipes = [];
+    console.log('Game started - running:', this.running, 'gameOver:', this.gameOver);
   }
 
   /**
@@ -43,8 +49,16 @@ class Game {
     if (this.bird) {
       this.bird.update();
       
+      // 鳥の生死チェック
+      if (!this.bird.isAlive()) {
+        console.log('Bird died, setting game over');
+        this.setGameOver();
+        return;
+      }
+      
       // 画面境界チェック
       if (this.bird.y < 0 || this.bird.y + this.bird.height > this.canvasHeight) {
+        console.log('Bird hit screen boundary, setting game over');
         this.setGameOver();
         return;
       }

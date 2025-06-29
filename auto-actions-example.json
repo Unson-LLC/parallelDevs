@@ -1,0 +1,29 @@
+{
+  "enabled": true,
+  "rules": [
+    {
+      "event_category": "ERROR",
+      "action": {
+        "type": "command",
+        "command": "echo 'Error detected in agent: {agent} - {description}'",
+        "timeout": 30
+      }
+    },
+    {
+      "event_category": "HELP",
+      "action": {
+        "type": "command",
+        "command": "echo 'CLAUDE.md changed for agent: {agent}'",
+        "timeout": 15
+      }
+    },
+    {
+      "event_category": "COMPLETE",
+      "action": {
+        "type": "script",
+        "command": "curl -X POST http://localhost:9999/notify -d '{\"type\":\"complete\",\"agent\":\"{agent}\",\"message\":\"Task completed\"}'",
+        "timeout": 10
+      }
+    }
+  ]
+}

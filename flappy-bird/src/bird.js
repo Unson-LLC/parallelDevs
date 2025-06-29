@@ -7,8 +7,6 @@ class Bird {
         this.initialX = this.x;
         this.initialY = this.y;
         
-        console.log('Bird created at x:', this.x, 'y:', this.y);
-        
         // 物理パラメータ
         this.velocity = 0;
         this.gravity = 0.6;
@@ -21,6 +19,8 @@ class Bird {
         
         // 状態
         this.alive = true;
+        
+        console.log('Bird created at x:', this.x, 'y:', this.y, 'ground:', 600 - this.height, 'alive:', this.alive);
     }
     
     // 更新処理
