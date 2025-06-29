@@ -1,5 +1,7 @@
 # Uzi - Parallel AI Agent Management Tool
 
+[🇯🇵 日本語版 README はこちら](./README_uzi_ja.md)
+
 This is a fork of the original [Uzi](https://github.com/devflowinc/uzi) project by [Devflow, Inc](https://www.uzi.sh).
 
 ## Acknowledgments
