@@ -1,14 +1,25 @@
+# Uzi - Parallel AI Agent Management Tool
+
+This is a fork of the original [Uzi](https://github.com/devflowinc/uzi) project by [Devflow, Inc](https://www.uzi.sh).
+
+## Acknowledgments
+
+This project is based on the excellent work by the Uzi team at Devflow, Inc. The original project can be found at:
+- Website: https://www.uzi.sh
+- Repository: https://github.com/devflowinc/uzi
+- Whitepaper: https://cdn.trieve.ai/uzi-whitepaper.pdf
+
+## About This Fork
+
+This fork includes:
+- Japanese documentation and improved internationalization
+- Enhanced design documentation for parallel development workflows
+- Additional configuration management features
+- Improved error handling and monitoring capabilities
+
 <a href="https://www.uzi.sh">
   <img src="https://trieve.b-cdn.net/www.uzi.sh_.png">
 </a>
-<p align="center">
-  <a
-    href="https://cdn.trieve.ai/uzi-whitepaper.pdf"
-    target="_blank"
-    rel="noopener noreferrer"
-    >Whitepaper
-  </a>
-</p>
 
 ## Installation
 
