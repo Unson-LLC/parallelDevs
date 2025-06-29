@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breakout Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        h1 {
+            color: #00ff00;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #00ff00;
+        }
+        
+        #gameContainer {
+            position: relative;
+            border: 2px solid #00ff00;
+            border-radius: 10px;
+            padding: 10px;
+            background-color: #000;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+        }
+        
+        #gameCanvas {
+            display: block;
+            background-color: #000;
+        }
+        
+        #gameInfo {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            width: 800px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .info-item {
+            background-color: #333;
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: 1px solid #00ff00;
+        }
+        
+        #controls {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 16px;
+            color: #ccc;
+        }
+        
+        .control-item {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>BREAKOUT GAME</h1>
+    
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+    </div>
+    
+    <div id="gameInfo">
+        <div class="info-item">Score: <span id="score">0</span></div>
+        <div class="info-item">Lives: <span id="lives">3</span></div>
+        <div class="info-item">State: <span id="gameState">Press SPACE to Start</span></div>
+    </div>
+    
+    <div id="controls">
+        <div class="control-item">Use arrow keys to move the paddle</div>
+        <div class="control-item">Press SPACE to start/pause the game</div>
+        <div class="control-item">Press R to reset the game</div>
+    </div>
+    
+    <script>
+        // Ball クラス
+        class Ball {
+            constructor(x, y, radius, speedX, speedY) {
+                this._initialX = x;
+                this._initialY = y;
+                this._x = x;
+                this._y = y;
+                this._radius = radius;
+                this._speedX = speedX;
+                this._speedY = speedY;
+            }
+
+            reset() {
+                this._x = this._initialX;
+                this._y = this._initialY;
+            }
+
+            update(dt) {
+                this._x += this._speedX * dt;
+                this._y += this._speedY * dt;
+            }
+
+            reverseX() {
+                this._speedX = -this._speedX;
+            }
+
+            reverseY() {
+                this._speedY = -this._speedY;
+            }
+
+            getPosition() {
+                return { x: this._x, y: this._y };
+            }
+
+            getRadius() {
+                return this._radius;
+            }
+
+            getVelocity() {
+                return { x: this._speedX, y: this._speedY };
+            }
+        }
+
+        // Paddle クラス
+        class Paddle {
+            constructor(x, y, width, height, speed) {
+                this._initialX = x;
+                this._x = x;
+                this._y = y;
+                this._width = width;
+                this._height = height;
+                this._speed = speed;
+                this._isMovingLeft = false;
+                this._isMovingRight = false;
+            }
+
+            moveLeft() {
+                this._isMovingLeft = true;
+            }
+
+            moveRight() {
+                this._isMovingRight = true;
+            }
+
+            stopMoving() {
+                this._isMovingLeft = false;
+                this._isMovingRight = false;
+            }
+
+            update(canvasWidth, dt = 1) {
+                if (this._isMovingLeft) {
+                    this._x -= this._speed * dt;
+                }
+                if (this._isMovingRight) {
+                    this._x += this._speed * dt;
+                }
+
+                if (this._x < 0) {
+                    this._x = 0;
+                }
+                if (this._x + this._width > canvasWidth) {
+                    this._x = canvasWidth - this._width;
+                }
+            }
+
+            reset() {
+                this._x = this._initialX;
+                this._isMovingLeft = false;
+                this._isMovingRight = false;
+            }
+
+            getPosition() {
+                return { x: this._x, y: this._y };
+            }
+
+            getDimensions() {
+                return { width: this._width, height: this._height };
+            }
+        }
+
+        // Block クラス
+        class Block {
+            constructor(x, y, width, height, color, points) {
+                this._x = x;
+                this._y = y;
+                this._width = width;
+                this._height = height;
+                this._color = color;
+                this._points = points;
+                this._destroyed = false;
+            }
+
+            hit() {
+                this._destroyed = true;
+            }
+
+            isDestroyed() {
+                return this._destroyed;
+            }
+
+            getPosition() {
+                return { x: this._x, y: this._y };
+            }
+
+            getDimensions() {
+                return { width: this._width, height: this._height };
+            }
+
+            getPoints() {
+                return this._points;
+            }
+
+            getColor() {
+                return this._color;
+            }
+        }
+
+        // メインゲームクラス
+        class Game {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.scoreElement = document.getElementById('score');
+                this.livesElement = document.getElementById('lives');
+                this.stateElement = document.getElementById('gameState');
+                
+                this.score = 0;
+                this.lives = 3;
+                this.gameState = 'stopped'; // stopped, running, paused, gameOver
+                
+                this.keys = {
+                    left: false,
+                    right: false,
+                    space: false
+                };
+                
+                this.lastTime = 0;
+                this.animationId = null;
+                
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.createGameObjects();
+                this.updateUI();
+                this.startGameLoop();
+                
+                // キャンバスにフォーカスを設定
+                this.canvas.tabIndex = 1;
+                this.canvas.focus();
+            }
+
+            setupEventListeners() {
+                document.addEventListener('keydown', (e) => this.handleKeyDown(e), true);
+                document.addEventListener('keyup', (e) => this.handleKeyUp(e), true);
+                
+                // スペースキーによるスクロールを確実に防ぐ
+                document.addEventListener('keydown', (e) => {
+                    if (e.code === 'Space') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                }, true);
+            }
+
+            createGameObjects() {
+                this.ball = new Ball(400, 300, 10, 200, -200);
+                this.paddle = new Paddle(350, 550, 100, 20, 300);
+                this.blocks = this.createBlocks();
+            }
+
+            createBlocks() {
+                const blocks = [];
+                const blockWidth = 75;
+                const blockHeight = 20;
+                const rows = 5;
+                const cols = 10;
+                const padding = 5;
+                const offsetX = 40;
+                const offsetY = 50;
+                
+                const colors = ['#ff0000', '#ff8800', '#ffff00', '#00ff00', '#0088ff'];
+                const points = [50, 40, 30, 20, 10];
+                
+                for (let row = 0; row < rows; row++) {
+                    for (let col = 0; col < cols; col++) {
+                        const x = offsetX + col * (blockWidth + padding);
+                        const y = offsetY + row * (blockHeight + padding);
+                        blocks.push(new Block(x, y, blockWidth, blockHeight, colors[row], points[row]));
+                    }
+                }
+                
+                return blocks;
+            }
+
+            handleKeyDown(event) {
+                switch (event.code) {
+                    case 'ArrowLeft':
+                    case 'KeyA':
+                        this.keys.left = true;
+                        event.preventDefault();
+                        break;
+                    case 'ArrowRight':
+                    case 'KeyD':
+                        this.keys.right = true;
+                        event.preventDefault();
+                        break;
+                    case 'Space':
+                        if (!this.keys.space) {
+                            this.handleSpacePress();
+                        }
+                        this.keys.space = true;
+                        event.preventDefault();
+                        break;
+                    case 'KeyR':
+                        this.resetGame();
+                        event.preventDefault();
+                        break;
+                }
+            }
+
+            handleKeyUp(event) {
+                switch (event.code) {
+                    case 'ArrowLeft':
+                    case 'KeyA':
+                        this.keys.left = false;
+                        break;
+                    case 'ArrowRight':
+                    case 'KeyD':
+                        this.keys.right = false;
+                        break;
+                    case 'Space':
+                        this.keys.space = false;
+                        break;
+                }
+            }
+
+            handleSpacePress() {
+                if (this.gameState === 'stopped' || this.gameState === 'gameOver') {
+                    if (this.gameState === 'gameOver') {
+                        this.resetGame();
+                    }
+                    this.gameState = 'running';
+                } else if (this.gameState === 'running') {
+                    this.gameState = 'paused';
+                } else if (this.gameState === 'paused') {
+                    this.gameState = 'running';
+                }
+                this.updateUI();
+            }
+
+            resetGame() {
+                this.score = 0;
+                this.lives = 3;
+                this.gameState = 'stopped';
+                this.ball.reset();
+                this.paddle.reset();
+                this.blocks = this.createBlocks();
+                this.updateUI();
+            }
+
+            startGameLoop() {
+                this.lastTime = performance.now();
+                this.gameLoop();
+            }
+
+            gameLoop = (currentTime) => {
+                const deltaTime = (currentTime - this.lastTime) / 1000;
+                this.lastTime = currentTime;
+                
+                this.update(deltaTime);
+                this.render();
+                
+                this.animationId = requestAnimationFrame(this.gameLoop);
+            }
+
+            update(deltaTime) {
+                if (this.gameState === 'running') {
+                    this.updateInput();
+                    this.updatePhysics(deltaTime);
+                    this.checkCollisions();
+                    this.checkGameConditions();
+                }
+            }
+
+            updateInput() {
+                if (this.keys.left) {
+                    this.paddle.moveLeft();
+                } else if (this.keys.right) {
+                    this.paddle.moveRight();
+                } else {
+                    this.paddle.stopMoving();
+                }
+            }
+
+            updatePhysics(deltaTime) {
+                this.paddle.update(this.canvas.width, deltaTime);
+                this.ball.update(deltaTime);
+            }
+
+            checkCollisions() {
+                const ballPos = this.ball.getPosition();
+                const ballRadius = this.ball.getRadius();
+                
+                // 壁との衝突
+                if (ballPos.x - ballRadius <= 0 || ballPos.x + ballRadius >= this.canvas.width) {
+                    this.ball.reverseX();
+                }
+                if (ballPos.y - ballRadius <= 0) {
+                    this.ball.reverseY();
+                }
+                if (ballPos.y + ballRadius >= this.canvas.height) {
+                    this.lives--;
+                    if (this.lives <= 0) {
+                        this.gameState = 'gameOver';
+                    } else {
+                        this.ball.reset();
+                    }
+                    this.updateUI();
+                }
+                
+                // パドルとの衝突
+                const paddlePos = this.paddle.getPosition();
+                const paddleDim = this.paddle.getDimensions();
+                if (ballPos.x + ballRadius >= paddlePos.x &&
+                    ballPos.x - ballRadius <= paddlePos.x + paddleDim.width &&
+                    ballPos.y + ballRadius >= paddlePos.y &&
+                    ballPos.y - ballRadius <= paddlePos.y + paddleDim.height) {
+                    this.ball.reverseY();
+                }
+                
+                // ブロックとの衝突
+                this.blocks.forEach(block => {
+                    if (!block.isDestroyed()) {
+                        const blockPos = block.getPosition();
+                        const blockDim = block.getDimensions();
+                        if (ballPos.x + ballRadius >= blockPos.x &&
+                            ballPos.x - ballRadius <= blockPos.x + blockDim.width &&
+                            ballPos.y + ballRadius >= blockPos.y &&
+                            ballPos.y - ballRadius <= blockPos.y + blockDim.height) {
+                            block.hit();
+                            this.ball.reverseY();
+                            this.score += block.getPoints();
+                            this.updateUI();
+                        }
+                    }
+                });
+            }
+
+            checkGameConditions() {
+                const remainingBlocks = this.blocks.filter(block => !block.isDestroyed());
+                if (remainingBlocks.length === 0) {
+                    // レベルクリア - 新しいブロックを作成
+                    this.blocks = this.createBlocks();
+                    this.ball.reset();
+                }
+            }
+
+            render() {
+                // 画面クリア
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // ボール描画
+                const ballPos = this.ball.getPosition();
+                this.ctx.beginPath();
+                this.ctx.arc(ballPos.x, ballPos.y, this.ball.getRadius(), 0, Math.PI * 2);
+                this.ctx.fillStyle = '#00ff00';
+                this.ctx.fill();
+                
+                // パドル描画
+                const paddlePos = this.paddle.getPosition();
+                const paddleDim = this.paddle.getDimensions();
+                this.ctx.fillStyle = '#00ff00';
+                this.ctx.fillRect(paddlePos.x, paddlePos.y, paddleDim.width, paddleDim.height);
+                
+                // ブロック描画
+                this.blocks.forEach(block => {
+                    if (!block.isDestroyed()) {
+                        const blockPos = block.getPosition();
+                        const blockDim = block.getDimensions();
+                        this.ctx.fillStyle = block.getColor();
+                        this.ctx.fillRect(blockPos.x, blockPos.y, blockDim.width, blockDim.height);
+                        
+                        this.ctx.strokeStyle = '#ffffff';
+                        this.ctx.lineWidth = 1;
+                        this.ctx.strokeRect(blockPos.x, blockPos.y, blockDim.width, blockDim.height);
+                    }
+                });
+                
+                // ゲーム状態のオーバーレイ
+                if (this.gameState !== 'running') {
+                    this.ctx.font = '30px Arial';
+                    this.ctx.fillStyle = '#00ff00';
+                    this.ctx.textAlign = 'center';
+                    
+                    const centerX = this.canvas.width / 2;
+                    const centerY = this.canvas.height / 2;
+                    
+                    switch (this.gameState) {
+                        case 'stopped':
+                            this.ctx.fillText('Press SPACE to Start', centerX, centerY);
+                            break;
+                        case 'paused':
+                            this.ctx.fillText('PAUSED - Press SPACE to Resume', centerX, centerY);
+                            break;
+                        case 'gameOver':
+                            this.ctx.fillText('GAME OVER - Press R to Restart', centerX, centerY);
+                            break;
+                    }
+                    
+                    this.ctx.textAlign = 'left';
+                }
+            }
+
+            updateUI() {
+                this.scoreElement.textContent = this.score;
+                this.livesElement.textContent = this.lives;
+                
+                let stateText = '';
+                switch (this.gameState) {
+                    case 'stopped':
+                        stateText = 'Press SPACE to Start';
+                        break;
+                    case 'running':
+                        stateText = 'Playing';
+                        break;
+                    case 'paused':
+                        stateText = 'Paused';
+                        break;
+                    case 'gameOver':
+                        stateText = 'Game Over';
+                        break;
+                }
+                this.stateElement.textContent = stateText;
+            }
+        }
+
+        // ゲーム開始
+        document.addEventListener('DOMContentLoaded', () => {
+            new Game();
+        });
+    </script>
+</body>
+</html>

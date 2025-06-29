@@ -51,8 +51,25 @@ class GameManager {
    * 現在のゲーム状態を取得
    * @returns {string} 'stopped', 'running', 'paused', 'gameOver'
    */
-  getGameState() {
+  // インターフェース準拠のために名前を変更
+  getState() {
     return this.gameState;
+  }
+
+  init() {
+    this.gameState = GameManager.GAME_STATES.STOPPED;
+    this.scoreManager.reset();
+    this.livesManager.reset();
+    this._resetEntities();
+  }
+
+  isGameOver() {
+    return this.gameState === GameManager.GAME_STATES.GAME_OVER;
+  }
+
+  isLevelComplete() {
+    return this.entities.blocks.length > 0 && 
+           this.entities.blocks.every(block => block.isDestroyed());
   }
 
   /**
