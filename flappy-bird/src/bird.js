@@ -2,10 +2,12 @@
 class Bird {
     constructor(x, y) {
         // 位置
-        this.x = x || 50;
-        this.y = y || 300;
+        this.x = x !== undefined ? x : 50;
+        this.y = y !== undefined ? y : 300;
         this.initialX = this.x;
         this.initialY = this.y;
+        
+        console.log('Bird created at x:', this.x, 'y:', this.y);
         
         // 物理パラメータ
         this.velocity = 0;
@@ -31,6 +33,7 @@ class Bird {
         
         // 地面との衝突チェック
         if (this.y > 600 - this.height) {
+            console.log('Bird hit ground! y:', this.y, 'ground:', 600 - this.height);
             this.y = 600 - this.height;
             this.velocity = 0;
             this.alive = false;
@@ -38,6 +41,7 @@ class Bird {
         
         // 天井との衝突チェック
         if (this.y < 0) {
+            console.log('Bird hit ceiling! y:', this.y);
             this.y = 0;
             this.velocity = 0;
         }
