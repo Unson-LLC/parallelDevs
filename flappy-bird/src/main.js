@@ -79,11 +79,13 @@ export function gameLoop(timestamp) {
  * @param {KeyboardEvent} event - キーボードイベント
  */
 function handleKeyInput(event) {
+  console.log('Key pressed:', event.code, 'Game:', !!game);
   if (!game) return;
 
   switch (event.code) {
     case 'Space':
       // スペースキーでジャンプ
+      console.log('Space key detected, game running:', game.isRunning());
       event.preventDefault();
       game.handleInput();
       break;

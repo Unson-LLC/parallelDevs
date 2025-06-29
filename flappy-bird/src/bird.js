@@ -45,8 +45,10 @@ class Bird {
     
     // ジャンプ
     jump() {
+        console.log('Bird jump called, alive:', this.alive, 'velocity before:', this.velocity);
         if (!this.alive) return;
         this.velocity = this.jumpPower;
+        console.log('Bird jump executed, velocity after:', this.velocity);
     }
     
     // 描画

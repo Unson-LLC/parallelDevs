@@ -131,6 +131,7 @@ class Game {
    * 入力処理
    */
   handleInput() {
+    console.log('Game handleInput called, bird:', !!this.bird, 'running:', this.running);
     if (this.bird && this.running) {
       this.bird.jump();
     }
