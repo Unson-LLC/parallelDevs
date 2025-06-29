@@ -60,7 +60,7 @@ export function gameLoop(timestamp) {
   // ゲームインスタンスが存在し、実行中の場合のみ更新
   if (game && game.isRunning()) {
     // ゲーム状態更新
-    game.update(deltaTime);
+    game.update();
 
     // 描画処理
     game.draw();

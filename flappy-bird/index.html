@@ -85,7 +85,18 @@
         
         // ページ読み込み完了後にゲーム開始
         window.addEventListener('DOMContentLoaded', () => {
-            startGame();
+            console.log('DOMContentLoaded, starting game...');
+            try {
+                startGame();
+                console.log('Game started successfully');
+            } catch (error) {
+                console.error('Error starting game:', error);
+            }
+        });
+        
+        // キーイベントリスナーを追加してテスト
+        document.addEventListener('keydown', (event) => {
+            console.log('Global keydown:', event.code, event.key);
         });
     </script>
 </body>
