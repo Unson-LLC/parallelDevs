@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird - TDD実装</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(to bottom, #70c5ce 0%, #abe9f2 100%);
+            font-family: Arial, sans-serif;
+        }
+        
+        #gameContainer {
+            text-align: center;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        #gameCanvas {
+            border: 2px solid #333;
+            background: linear-gradient(to bottom, #70c5ce 0%, #abe9f2 100%);
+        }
+        
+        #gameInfo {
+            margin-top: 20px;
+        }
+        
+        #score {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        #controls {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        #status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .status-ready {
+            background: #e8f5e8;
+            color: #2d5a2d;
+        }
+        
+        .status-playing {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-gameover {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <h1>🐦 Flappy Bird</h1>
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <div id="gameInfo">
+            <div id="score">スコア: 0</div>
+            <div id="controls">スペースキーまたはクリックでジャンプ<br>ゲームオーバー時はEnterキーで再スタート</div>
+            <div id="status" class="status-ready">ゲーム開始準備完了</div>
+        </div>
+    </div>
+
+    <!-- ゲームの実装ファイル（ES6モジュール） -->
+    <script type="module">
+        import { startGame } from './src/main.js';
+        
+        // ページ読み込み完了後にゲーム開始
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('DOMContentLoaded, starting game...');
+            try {
+                startGame();
+                console.log('Game started successfully');
+            } catch (error) {
+                console.error('Error starting game:', error);
+            }
+        });
+        
+        // キーイベントリスナーを追加してテスト
+        document.addEventListener('keydown', (event) => {
+            console.log('Global keydown:', event.code, event.key);
+        });
+    </script>
+</body>
+</html>
